@@ -46,15 +46,16 @@ export const votar = async (req, res) => {
     if (!urna) return notFound(res, 'Urna não encontrada');
     if (!eleitor) return notFound(res, 'Eleitor não encontrado');
 
-    if (urna.status !== 1) return forbidden(res, 'Urna não está ativa');
-    if (eleitor.status === 1) return forbidden(res, 'Eleitor já votou nesta eleição');
+    if (urna.status !== 1) return forbidden(res, 'Urna não está disponível para votação');
+    if (eleitor.status === 0) return forbidden(res, 'Eleitor não está liberado para votar');
+    if (eleitor.status === 2) return forbidden(res, 'Eleitor já votou nesta eleição');
 
     if (candidato.eleicoes_id !== urna.eleicoes_id) {
       return badRequest(res, 'Candidato e urna pertencem a eleições diferentes');
     }
 
-    const voto = await Voto.create({ id: uuidv4(), candidatos_id, urnas_id });
-    await eleitor.update({ status: 1 });
+    const voto = await Voto.create({ id: uuidv4(), candidatos_id, urnas_id, status: 1 });
+    await eleitor.update({ status: 2 });
 
     return created(res, { voto }, 'Voto registrado com sucesso');
   } catch (err) {

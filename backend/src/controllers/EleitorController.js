@@ -74,3 +74,20 @@ export const remover = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+export const liberar = async (req, res) => {
+  try {
+    const eleitor = await Eleitor.findByPk(req.params.id);
+    if (!eleitor) return notFound(res, 'Eleitor não encontrado');
+    if (eleitor.status === 2) return badRequest(res, 'Eleitor já votou e não pode ser alterado');
+    if (eleitor.status === 1) return badRequest(res, 'Eleitor já está liberado');
+
+    const eleicao = await Eleicao.findByPk(eleitor.eleicoes_id);
+    if (!eleicao || eleicao.status !== 2) return badRequest(res, 'A eleição precisa estar Em Andamento para liberar eleitores');
+
+    await eleitor.update({ status: 1 });
+    return success(res, eleitor, 'Eleitor liberado para votar');
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

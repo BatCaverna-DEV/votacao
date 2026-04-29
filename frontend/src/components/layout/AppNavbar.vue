@@ -17,16 +17,12 @@
 
     <div class="navbar-right">
       <!-- Dropdown do usuário -->
-      <div class="dropdown">
-        <button
-          class="user-btn dropdown-toggle"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-        >
+      <div class="position-relative" ref="dropdownRef">
+        <button class="user-btn dropdown-toggle" @click="showDropdown = !showDropdown">
           <div class="user-avatar">{{ iniciais }}</div>
           <span class="d-none d-md-inline">{{ auth.usuario?.username }}</span>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+        <ul v-show="showDropdown" class="dropdown-menu dropdown-menu-end shadow border-0 show" style="top:100%;right:0">
           <li>
             <span class="dropdown-item-text small text-muted">
               <i class="bi bi-shield-check me-1 text-primary"></i> Administrador
@@ -45,7 +41,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth.js'
 
@@ -55,6 +51,9 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
+const showDropdown = ref(false)
+const dropdownRef = ref(null)
+
 const paginaAtual = computed(() => route.name || 'Dashboard')
 
 const iniciais = computed(() => {
@@ -62,7 +61,17 @@ const iniciais = computed(() => {
   return u.slice(0, 2).toUpperCase()
 })
 
+function onClickOutside(e) {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
+    showDropdown.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', onClickOutside))
+onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
+
 function handleLogout() {
+  showDropdown.value = false
   auth.logout()
   router.push('/login')
 }

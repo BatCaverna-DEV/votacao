@@ -15,7 +15,7 @@ const Urna = sequelize.define('urnas', {
   status: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    comment: '0=inativa, 1=ativa',
+    comment: '1=fechada, 2=aberta, 3=apurada',
   },
   eleicoes_id: {
     type: DataTypes.STRING(50),

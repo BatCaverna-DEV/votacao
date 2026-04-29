@@ -38,6 +38,7 @@
         <i :class="['bi', item.icon]"></i>
         <span>{{ item.label }}</span>
       </RouterLink>
+
     </nav>
 
     <!-- Logout -->
@@ -75,11 +76,8 @@ const navPrincipal = [
 ]
 
 const navCadastros = [
-  { to: '/candidatos', icon: 'bi-person-badge',  label: 'Candidatos' },
-  { to: '/urnas',      icon: 'bi-archive',       label: 'Urnas' },
-  { to: '/eleitores',  icon: 'bi-people',        label: 'Eleitores' },
-  { to: '/usuarios',   icon: 'bi-person-gear',   label: 'Usuários' },
-  { to: '/pessoas',    icon: 'bi-person-lines-fill', label: 'Pessoas' },
+  { to: '/usuarios',   icon: 'bi-person-gear',       label: 'Usuários' },
+  { to: '/pessoas',    icon: 'bi-person-lines-fill',  label: 'Pessoas' },
 ]
 
 const iniciais = computed(() => {

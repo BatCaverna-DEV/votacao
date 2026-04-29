@@ -20,6 +20,10 @@ const Candidato = sequelize.define('candidatos', {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
+  foto: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
 });
 
 Candidato.beforeCreate((candidato) => {

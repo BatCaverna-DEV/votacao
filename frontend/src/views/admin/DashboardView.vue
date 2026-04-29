@@ -156,11 +156,11 @@ function formatarData(data) {
 }
 
 function badgeStatus(status) {
-  return { 0: 'bg-secondary-subtle text-secondary', 1: 'bg-success-subtle text-success', 2: 'bg-danger-subtle text-danger' }[status] ?? 'bg-secondary-subtle text-secondary'
+  return { 1: 'bg-secondary-subtle text-secondary', 2: 'bg-success-subtle text-success', 3: 'bg-danger-subtle text-danger' }[status] ?? 'bg-secondary-subtle text-secondary'
 }
 
 function labelStatus(status) {
-  return { 0: 'Inativa', 1: 'Ativa', 2: 'Encerrada' }[status] ?? 'Desconhecido'
+  return { 1: 'Criada', 2: 'Em Andamento', 3: 'Finalizada' }[status] ?? 'Desconhecido'
 }
 
 onMounted(async () => {

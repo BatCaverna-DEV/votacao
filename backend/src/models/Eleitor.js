@@ -11,7 +11,7 @@ const Eleitor = sequelize.define('eleitores', {
   status: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    comment: '0=não votou, 1=votou',
+    comment: '0=Pendente, 1=Liberado, 2=Votou, 3=Faltou',
   },
   pessoas_id: {
     type: DataTypes.STRING(50),

@@ -25,6 +25,12 @@ const routes = [
         component: () => import('../views/admin/EleicoesView.vue'),
       },
       {
+        path: 'eleicoes/:id',
+        name: 'EleicaoDetalhe',
+        component: () => import('../views/admin/EleicaoDetalheView.vue'),
+      },
+
+      {
         path: 'candidatos',
         name: 'Candidatos',
         component: () => import('../views/admin/CandidatosView.vue'),
@@ -51,6 +57,24 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/votar',
+    component: () => import('../layouts/VotacaoLayout.vue'),
+    meta: { requiresAuth: true, eleitorOnly: true },
+    children: [
+      {
+        path: '',
+        name: 'Votacao',
+        component: () => import('../views/VotacaoView.vue'),
+      },
+    ],
+  },
+  {
+    path: '/terminal/:urnaId',
+    name: 'Terminal',
+    component: () => import('../views/TerminalView.vue'),
+    meta: { requiresAuth: true, adminOnly: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/login' },
 ]
 
@@ -59,13 +83,17 @@ const router = createRouter({
   routes,
 })
 
-// Usa retorno direto em vez de next() — padrão recomendado no Vue Router 4
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login'
-  if (to.meta.guest && auth.isAuthenticated) return '/dashboard'
-  if (to.meta.adminOnly && auth.isAuthenticated && !auth.isAdmin) return '/login'
+
+  if (to.meta.guest && auth.isAuthenticated) {
+    return auth.isAdmin ? '/dashboard' : '/votar'
+  }
+
+  if (to.meta.adminOnly && auth.isAuthenticated && !auth.isAdmin) return '/votar'
+  if (to.meta.eleitorOnly && auth.isAuthenticated && auth.isAdmin) return '/dashboard'
 })
 
 export default router

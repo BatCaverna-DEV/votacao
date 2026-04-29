@@ -15,7 +15,7 @@ const Eleicao = sequelize.define('eleicoes', {
   status: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    comment: '0=inativa, 1=ativa, 2=encerrada',
+    comment: '1=criada, 2=em andamento, 3=finalizada',
   },
   inicio: {
     type: DataTypes.DATE,
