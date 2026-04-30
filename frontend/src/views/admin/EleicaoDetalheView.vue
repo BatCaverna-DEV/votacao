@@ -446,7 +446,7 @@ onMounted(async () => {
   <div>
     <!-- Header -->
     <div class="d-flex align-items-start gap-3 mb-4">
-      <RouterLink to="/eleicoes" class="btn btn-sm btn-outline-secondary mt-1">
+      <RouterLink to="/admin/eleicoes" class="btn btn-sm btn-outline-secondary mt-1">
         <i class="bi bi-arrow-left"></i>
       </RouterLink>
       <div class="flex-grow-1">

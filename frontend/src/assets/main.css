@@ -1,0 +1,70 @@
+/* ── Paleta IFMA ────────────────────────────────────────────── */
+:root {
+  --ifma-green:        #00A651;
+  --ifma-green-dark:   #006B3C;
+  --ifma-green-deeper: #004d2b;
+  --ifma-green-light:  #e6f7ee;
+  --ifma-green-muted:  rgba(0, 166, 81, 0.15);
+
+  /* Bootstrap primary override */
+  --bs-primary:          #00A651;
+  --bs-primary-rgb:      0, 166, 81;
+  --bs-link-color:       #006B3C;
+  --bs-link-hover-color: #004d2b;
+
+  --bs-primary-bg-subtle:   #e6f7ee;
+  --bs-primary-border-subtle: #b3e8cc;
+  --bs-primary-text-emphasis: #006B3C;
+}
+
+/* Botão primary */
+.btn-primary {
+  background-color: var(--ifma-green) !important;
+  border-color:     var(--ifma-green) !important;
+  color: #fff !important;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--ifma-green-dark) !important;
+  border-color:     var(--ifma-green-dark) !important;
+}
+.btn-primary:focus, .btn-primary:active {
+  background-color: var(--ifma-green-dark) !important;
+  border-color:     var(--ifma-green-dark) !important;
+  box-shadow: 0 0 0 0.2rem rgba(0,166,81,.35) !important;
+}
+
+/* Botão outline-primary */
+.btn-outline-primary {
+  color:        var(--ifma-green) !important;
+  border-color: var(--ifma-green) !important;
+}
+.btn-outline-primary:hover:not(:disabled) {
+  background-color: var(--ifma-green) !important;
+  color: #fff !important;
+}
+
+/* Badges e textos primary */
+.bg-primary         { background-color: var(--ifma-green) !important; }
+.text-primary       { color: var(--ifma-green) !important; }
+.border-primary     { border-color: var(--ifma-green) !important; }
+
+.bg-primary-subtle  { background-color: var(--ifma-green-light) !important; }
+.text-primary-emphasis { color: var(--ifma-green-dark) !important; }
+
+/* Progress bar */
+.progress-bar.bg-primary { background-color: var(--ifma-green) !important; }
+
+/* Form focus */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ifma-green) !important;
+  box-shadow: 0 0 0 0.2rem rgba(0,166,81,.25) !important;
+}
+
+.input-group:focus-within .input-group-text {
+  border-color: var(--ifma-green) !important;
+}
+
+/* Link */
+a { color: var(--ifma-green-dark); }
+a:hover { color: var(--ifma-green-deeper); }

@@ -4,9 +4,7 @@
     <!-- ETAPA 1 — Identificação por matrícula -->
     <transition name="fade" mode="out-in">
       <div v-if="etapa === 'identificacao'" key="id" class="terminal-tela">
-        <div class="terminal-logo">
-          <i class="bi bi-display"></i>
-        </div>
+        <img src="@/assets/logo.svg" alt="VotaIF" class="terminal-brand-logo" />
         <h2 class="terminal-titulo">Terminal de Votação</h2>
         <p v-if="urnaDescricao" class="terminal-urna-label">
           <i class="bi bi-archive-fill me-1"></i>{{ urnaDescricao }}
@@ -228,7 +226,7 @@ onMounted(async () => {
 <style scoped>
 .terminal {
   min-height: 100vh;
-  background: #0f1c2e;
+  background: #0a1f10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,17 +243,24 @@ onMounted(async () => {
 }
 
 /* Logo */
+.terminal-brand-logo {
+  height: 52px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+}
+
 .terminal-logo {
   width: 80px;
   height: 80px;
-  background: #0d6efd;
+  background: #00A651;
   border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.4rem;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(13,110,253,.4);
+  box-shadow: 0 4px 20px rgba(0,166,81,.4);
 }
 
 .terminal-logo--warn {
@@ -279,9 +284,9 @@ onMounted(async () => {
 }
 
 .terminal-urna-label {
-  background: rgba(13,110,253,.2);
-  border: 1px solid rgba(13,110,253,.4);
-  color: #6ea8fe;
+  background: rgba(0,166,81,.2);
+  border: 1px solid rgba(0,166,81,.4);
+  color: #6ee0a0;
   border-radius: 30px;
   padding: 6px 18px;
   font-size: 0.88rem;
@@ -313,7 +318,7 @@ onMounted(async () => {
 }
 
 .terminal-input::placeholder { color: rgba(255,255,255,.3); letter-spacing: 0; }
-.terminal-input:focus { border-color: #0d6efd; }
+.terminal-input:focus { border-color: #00A651; }
 
 /* Erro */
 .terminal-erro {
@@ -329,7 +334,7 @@ onMounted(async () => {
 
 /* Botões */
 .terminal-btn {
-  background: #0d6efd;
+  background: #00A651;
   border: none;
   border-radius: 14px;
   color: #fff;
@@ -343,7 +348,7 @@ onMounted(async () => {
   justify-content: center;
 }
 
-.terminal-btn:hover:not(:disabled) { background: #0b5ed7; transform: translateY(-1px); }
+.terminal-btn:hover:not(:disabled) { background: #006B3C; transform: translateY(-1px); }
 .terminal-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .terminal-btn--green { background: #198754; }
 .terminal-btn--green:hover:not(:disabled) { background: #157347; }
@@ -388,7 +393,7 @@ onMounted(async () => {
 .saudacao-avatar {
   width: 48px;
   height: 48px;
-  background: #0d6efd;
+  background: #00A651;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -446,9 +451,9 @@ onMounted(async () => {
 }
 
 .candidato-card--ativo {
-  background: rgba(13,110,253,.18);
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 3px rgba(13,110,253,.2);
+  background: rgba(0,166,81,.18);
+  border-color: #00A651;
+  box-shadow: 0 0 0 3px rgba(0,166,81,.2);
 }
 
 .candidato-card__foto {
@@ -483,7 +488,7 @@ onMounted(async () => {
 .candidato-card__numero {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #6ea8fe;
+  color: #6ee0a0;
   line-height: 1;
 }
 
@@ -532,7 +537,7 @@ onMounted(async () => {
 .confirmar-numero {
   font-size: 3rem;
   font-weight: 900;
-  color: #6ea8fe;
+  color: #6ee0a0;
   line-height: 1;
 }
 

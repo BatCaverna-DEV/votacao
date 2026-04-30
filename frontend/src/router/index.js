@@ -3,17 +3,22 @@ import { useAuthStore } from '../stores/auth.js'
 
 const routes = [
   {
+    path: '/',
+    name: 'Home',
+    component: () => import('../views/HomeView.vue'),
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('../views/LoginView.vue'),
     meta: { guest: true },
   },
   {
-    path: '/',
+    path: '/admin',
     component: () => import('../layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, adminOnly: true },
     children: [
-      { path: '', redirect: '/dashboard' },
+      { path: '', redirect: '/admin/dashboard' },
       {
         path: 'dashboard',
         name: 'Dashboard',
@@ -29,7 +34,6 @@ const routes = [
         name: 'EleicaoDetalhe',
         component: () => import('../views/admin/EleicaoDetalheView.vue'),
       },
-
       {
         path: 'candidatos',
         name: 'Candidatos',
@@ -75,7 +79,7 @@ const routes = [
     component: () => import('../views/TerminalView.vue'),
     meta: { requiresAuth: true, adminOnly: true },
   },
-  { path: '/:pathMatch(.*)*', redirect: '/login' },
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({
@@ -89,11 +93,11 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login'
 
   if (to.meta.guest && auth.isAuthenticated) {
-    return auth.isAdmin ? '/dashboard' : '/votar'
+    return auth.isAdmin ? '/admin/dashboard' : '/votar'
   }
 
   if (to.meta.adminOnly && auth.isAuthenticated && !auth.isAdmin) return '/votar'
-  if (to.meta.eleitorOnly && auth.isAuthenticated && auth.isAdmin) return '/dashboard'
+  if (to.meta.eleitorOnly && auth.isAuthenticated && auth.isAdmin) return '/admin/dashboard'
 })
 
 export default router

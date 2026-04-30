@@ -2,8 +2,7 @@
   <div class="votacao-layout">
     <header class="votacao-header">
       <div class="d-flex align-items-center gap-2">
-        <div class="header-icon"><i class="bi bi-check2-circle"></i></div>
-        <span class="header-brand">Sistema de Votação</span>
+        <img src="@/assets/logo.svg" alt="VotaIF" style="height:34px;width:auto" />
       </div>
       <div class="d-flex align-items-center gap-3">
         <span class="text-muted small">
@@ -55,23 +54,6 @@ function sair() {
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 
-.header-icon {
-  width: 34px;
-  height: 34px;
-  background: #0d6efd;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 1.1rem;
-}
-
-.header-brand {
-  font-weight: 700;
-  font-size: 1rem;
-  color: #0f1c2e;
-}
 
 .votacao-main {
   flex: 1;

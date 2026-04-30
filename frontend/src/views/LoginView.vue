@@ -5,10 +5,8 @@
 
         <!-- Logo / Título -->
         <div class="text-center mb-4">
-          <div class="login-icon mb-3">
-            <i class="bi bi-check2-circle"></i>
-          </div>
-          <h4 class="fw-bold text-dark">Sistema de Votação</h4>
+          <img src="@/assets/logo.svg" alt="VotaIF" class="login-logo mb-3" />
+          <p class="text-muted small mb-0">Campus Coelho Neto · IFMA</p>
           <p class="text-muted small">Acesse sua conta para continuar</p>
         </div>
 
@@ -99,7 +97,7 @@ async function handleLogin() {
   erro.value = null
   try {
     await auth.login(form.username, form.password)
-    router.push('/dashboard')
+    router.push('/admin/dashboard')
   } catch (e) {
     erro.value = e.response?.data?.message || 'Erro ao conectar com o servidor'
   } finally {
@@ -110,7 +108,7 @@ async function handleLogin() {
 
 <style scoped>
 .login-page {
-  background: linear-gradient(135deg, #1a2a4a 0%, #2d4a7a 50%, #1a3a5c 100%);
+  background: linear-gradient(150deg, #004d2b 0%, #006B3C 45%, #00A651 100%);
   min-height: 100vh;
 }
 
@@ -120,33 +118,12 @@ async function handleLogin() {
   border-radius: 16px;
 }
 
-.login-icon {
-  width: 72px;
-  height: 72px;
-  background: linear-gradient(135deg, #0d6efd, #0a58ca);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.login-icon i {
-  font-size: 2rem;
-  color: white;
+.login-logo {
+  height: 56px;
+  width: auto;
 }
 
 .input-group-text {
   cursor: default;
-}
-
-.form-control:focus {
-  box-shadow: none;
-  border-color: #86b7fe;
-}
-
-.form-control:focus ~ .input-group-text,
-.input-group:focus-within .input-group-text {
-  border-color: #86b7fe;
 }
 </style>

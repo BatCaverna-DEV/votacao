@@ -5,10 +5,7 @@
   <aside :class="['sidebar', { 'sidebar--open': aberto }]">
     <!-- Brand -->
     <div class="sidebar-brand">
-      <div class="sidebar-brand__icon">
-        <i class="bi bi-check2-circle"></i>
-      </div>
-      <span class="sidebar-brand__text">Votação</span>
+      <img src="@/assets/logo.svg" alt="VotaIF" class="sidebar-brand__logo" />
     </div>
 
     <!-- Nav -->
@@ -71,13 +68,13 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const navPrincipal = [
-  { to: '/dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
-  { to: '/eleicoes',  icon: 'bi-ballot',       label: 'Eleições' },
+  { to: '/admin/dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+  { to: '/admin/eleicoes',  icon: 'bi-ballot',       label: 'Eleições' },
 ]
 
 const navCadastros = [
-  { to: '/usuarios',   icon: 'bi-person-gear',       label: 'Usuários' },
-  { to: '/pessoas',    icon: 'bi-person-lines-fill',  label: 'Pessoas' },
+  { to: '/admin/usuarios',   icon: 'bi-person-gear',       label: 'Usuários' },
+  { to: '/admin/pessoas',    icon: 'bi-person-lines-fill',  label: 'Pessoas' },
 ]
 
 const iniciais = computed(() => {
@@ -98,7 +95,7 @@ function handleLogout() {
   left: 0;
   height: 100vh;
   width: 250px;
-  background: #0f1c2e;
+  background: #0a1f10;
   display: flex;
   flex-direction: column;
   z-index: 1040;
@@ -126,29 +123,14 @@ function handleLogout() {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 20px 20px;
+  justify-content: center;
+  padding: 18px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-.sidebar-brand__icon {
-  width: 38px;
+.sidebar-brand__logo {
   height: 38px;
-  background: #0d6efd;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  color: white;
-  flex-shrink: 0;
-}
-
-.sidebar-brand__text {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: white;
-  letter-spacing: 0.5px;
+  width: auto;
 }
 
 /* Nav */
@@ -188,13 +170,13 @@ function handleLogout() {
 }
 
 .sidebar-nav__item--active {
-  background: rgba(13,110,253,0.25);
-  color: #6ea8fe;
+  background: rgba(0,166,81,0.22);
+  color: #6ee0a0;
   font-weight: 600;
 }
 
 .sidebar-nav__item--active i {
-  color: #0d6efd;
+  color: #00A651;
 }
 
 .sidebar-nav__item i {
@@ -223,7 +205,7 @@ function handleLogout() {
 .sidebar-user__avatar {
   width: 34px;
   height: 34px;
-  background: #0d6efd;
+  background: #00A651;
   border-radius: 50%;
   display: flex;
   align-items: center;

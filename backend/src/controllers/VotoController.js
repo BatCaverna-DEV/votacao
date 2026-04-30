@@ -1,6 +1,7 @@
-import { Voto, Candidato, Urna, Eleitor, Eleicao } from '../models/index.js';
+import { Voto, Candidato, Urna, Eleitor, Eleicao, Pessoa } from '../models/index.js';
 import { success, created, notFound, badRequest, forbidden } from '../helpers/response.js';
 import { v4 as uuidv4 } from 'uuid';
+import { enviarConfirmacaoVoto } from '../services/mail.js';
 
 export const listar = async (req, res) => {
   try {
@@ -56,6 +57,21 @@ export const votar = async (req, res) => {
 
     const voto = await Voto.create({ id: uuidv4(), candidatos_id, urnas_id, status: 1 });
     await eleitor.update({ status: 2 });
+
+    // Envia e-mail de confirmação em background (não bloqueia a resposta)
+    Promise.all([
+      Pessoa.findByPk(eleitor.pessoas_id),
+      Eleicao.findByPk(urna.eleicoes_id),
+    ]).then(([pessoa, eleicao]) => {
+      if (pessoa?.email) {
+        enviarConfirmacaoVoto({
+          nome: pessoa.nome,
+          email: pessoa.email,
+          eleicao: eleicao?.descricao ?? '—',
+          urna: urna.descricao,
+        }).catch(() => {});
+      }
+    }).catch(() => {});
 
     return created(res, { voto }, 'Voto registrado com sucesso');
   } catch (err) {

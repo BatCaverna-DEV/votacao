@@ -9,13 +9,15 @@ import urnasRoutes from './urnas.js';
 import votosRoutes from './votos.js';
 import votacaoRoutes from './votacao.js';
 import terminalRoutes from './terminal.js';
+import publicaRoutes from './publica.js';
 
 const router = Router();
 
 router.get('/', (req, res) => {
-  res.json({ success: true, message: 'API Sistema de Votação v1.0' });
+  res.json({ success: true, message: 'API VotaIF v1.0' });
 });
 
+router.use('/publica', publicaRoutes);
 router.use('/auth', authRoutes);
 router.use('/usuarios', usuariosRoutes);
 router.use('/pessoas', pessoasRoutes);

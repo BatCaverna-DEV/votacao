@@ -9,7 +9,7 @@
     <nav class="d-none d-md-block">
       <ol class="breadcrumb mb-0">
         <li class="breadcrumb-item">
-          <RouterLink to="/dashboard" class="text-decoration-none text-muted small">Início</RouterLink>
+          <RouterLink to="/admin/dashboard" class="text-decoration-none text-muted small">Início</RouterLink>
         </li>
         <li class="breadcrumb-item active small">{{ paginaAtual }}</li>
       </ol>
@@ -139,7 +139,7 @@ function handleLogout() {
 .user-avatar {
   width: 28px;
   height: 28px;
-  background: #0d6efd;
+  background: #00A651;
   border-radius: 50%;
   display: flex;
   align-items: center;

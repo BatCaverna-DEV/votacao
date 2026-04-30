@@ -1,6 +1,7 @@
-import { Pessoa, Eleitor, Voto, Urna } from '../models/index.js';
+import { Pessoa, Eleitor, Voto, Urna, Eleicao } from '../models/index.js';
 import { success, notFound, badRequest, forbidden } from '../helpers/response.js';
 import { v4 as uuidv4 } from 'uuid';
+import { enviarConfirmacaoVoto } from '../services/mail.js';
 
 export const identificar = async (req, res) => {
   try {
@@ -57,6 +58,22 @@ export const votar = async (req, res) => {
 
     await Voto.create({ id: uuidv4(), candidatos_id, urnas_id, status: 1 });
     await eleitor.update({ status: 2 });
+
+    // Envia e-mail de confirmação em background (não bloqueia a resposta)
+    Promise.all([
+      Pessoa.findByPk(eleitor.pessoas_id),
+      Eleicao.findByPk(urna.eleicoes_id),
+    ]).then(([pessoa, eleicao]) => {
+      if (pessoa?.email) {
+        enviarConfirmacaoVoto({
+          nome: pessoa.nome,
+          email: pessoa.email,
+          eleicao: eleicao?.descricao ?? '—',
+          urna: urna.descricao,
+        }).then(() => console.log(`[mail] Confirmação enviada para ${pessoa.email}`))
+          .catch(err => console.error('[mail] Falha ao enviar e-mail:', err.message));
+      }
+    }).catch(err => console.error('[mail] Erro ao buscar dados para e-mail:', err.message));
 
     return success(res, null, 'Voto registrado com sucesso');
   } catch (err) {
