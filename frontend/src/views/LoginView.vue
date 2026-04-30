@@ -97,7 +97,7 @@ async function handleLogin() {
   erro.value = null
   try {
     await auth.login(form.username, form.password)
-    router.push('/admin/dashboard')
+    router.push('/dashboard')
   } catch (e) {
     erro.value = e.response?.data?.message || 'Erro ao conectar com o servidor'
   } finally {

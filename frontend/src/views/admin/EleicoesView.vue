@@ -65,7 +65,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in listaFiltrada" :key="item.id" class="row-clicavel" @click="$router.push(`/admin/eleicoes/${item.id}`)">
+              <tr v-for="item in listaFiltrada" :key="item.id" class="row-clicavel" @click="$router.push(`/eleicoes/${item.id}`)">
                 <td class="ps-4 fw-semibold small">{{ item.descricao }}</td>
                 <td class="small text-muted">{{ formatarData(item.inicio) }}</td>
                 <td class="small text-muted">{{ formatarData(item.fim) }}</td>

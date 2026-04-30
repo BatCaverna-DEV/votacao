@@ -9,7 +9,7 @@
     <nav class="d-none d-md-block">
       <ol class="breadcrumb mb-0">
         <li class="breadcrumb-item">
-          <RouterLink to="/admin/dashboard" class="text-decoration-none text-muted small">Início</RouterLink>
+          <RouterLink to="/dashboard" class="text-decoration-none text-muted small">Início</RouterLink>
         </li>
         <li class="breadcrumb-item active small">{{ paginaAtual }}</li>
       </ol>

@@ -58,7 +58,7 @@ async function selecionarEleicao(el) {
 
 function irParaLogin() {
   if (auth.isAuthenticated) {
-    router.push(auth.isAdmin ? '/admin/dashboard' : '/votar')
+    router.push(auth.isAdmin ? '/dashboard' : '/votar')
   } else {
     router.push('/login')
   }

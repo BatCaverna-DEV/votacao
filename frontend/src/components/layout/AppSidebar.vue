@@ -68,13 +68,13 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const navPrincipal = [
-  { to: '/admin/dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
-  { to: '/admin/eleicoes',  icon: 'bi-ballot',       label: 'Eleições' },
+  { to: '/dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
+  { to: '/eleicoes',  icon: 'bi-ballot',       label: 'Eleições' },
 ]
 
 const navCadastros = [
-  { to: '/admin/usuarios',   icon: 'bi-person-gear',       label: 'Usuários' },
-  { to: '/admin/pessoas',    icon: 'bi-person-lines-fill',  label: 'Pessoas' },
+  { to: '/usuarios',   icon: 'bi-person-gear',       label: 'Usuários' },
+  { to: '/pessoas',    icon: 'bi-person-lines-fill',  label: 'Pessoas' },
 ]
 
 const iniciais = computed(() => {
