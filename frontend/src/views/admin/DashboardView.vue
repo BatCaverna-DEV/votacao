@@ -36,84 +36,6 @@
       </div>
     </div>
 
-    <!-- Linha com tabela de eleições e atividade recente -->
-    <div class="row g-3">
-      <!-- Tabela de Eleições -->
-      <div class="col-12 col-xl-8">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between py-3">
-            <h6 class="fw-bold mb-0">
-              <i class="bi bi-ballot text-primary me-2"></i>Eleições
-            </h6>
-            <RouterLink to="/eleicoes" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-              Ver todas
-            </RouterLink>
-          </div>
-          <div class="card-body p-0">
-            <div v-if="loading" class="p-4">
-              <div v-for="n in 3" :key="n" class="placeholder-glow mb-3">
-                <span class="placeholder col-12 rounded" style="height: 32px;"></span>
-              </div>
-            </div>
-            <div v-else-if="eleicoes.length === 0" class="text-center py-5 text-muted">
-              <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-              Nenhuma eleição cadastrada
-            </div>
-            <div v-else class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th class="small fw-semibold ps-4">Descrição</th>
-                    <th class="small fw-semibold">Início</th>
-                    <th class="small fw-semibold">Fim</th>
-                    <th class="small fw-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="e in eleicoes" :key="e.id">
-                    <td class="ps-4">
-                      <span class="fw-semibold small">{{ e.descricao }}</span>
-                    </td>
-                    <td class="small text-muted">{{ formatarData(e.inicio) }}</td>
-                    <td class="small text-muted">{{ formatarData(e.fim) }}</td>
-                    <td>
-                      <span :class="['badge', 'rounded-pill', badgeStatus(e.status)]">
-                        {{ labelStatus(e.status) }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Acesso rápido -->
-      <div class="col-12 col-xl-4">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-header bg-white border-0 py-3">
-            <h6 class="fw-bold mb-0">
-              <i class="bi bi-lightning-charge text-warning me-2"></i>Acesso Rápido
-            </h6>
-          </div>
-          <div class="card-body">
-            <div class="d-grid gap-2">
-              <RouterLink
-                v-for="acao in acoesRapidas"
-                :key="acao.to"
-                :to="acao.to"
-                :class="['btn', `btn-outline-${acao.cor}`, 'text-start', 'd-flex', 'align-items-center', 'gap-2']"
-              >
-                <i :class="['bi', acao.icon]"></i>
-                <span class="small fw-semibold">{{ acao.label }}</span>
-              </RouterLink>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Alerta de erro -->
     <div v-if="erroCarregamento" class="alert alert-warning d-flex align-items-center mt-3" role="alert">
       <i class="bi bi-exclamation-triangle me-2"></i>
@@ -132,7 +54,6 @@ const loading = ref(true)
 const erroCarregamento = ref(null)
 
 const totais = reactive({ eleicoes: 0, candidatos: 0, eleitores: 0, usuarios: 0 })
-const eleicoes = ref([])
 
 const dataHoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -143,26 +64,6 @@ const cards = computed(() => [
   { label: 'Usuários',   valor: totais.usuarios,   icon: 'bi-person-gear',  cor: 'purple', to: '/usuarios'  },
 ])
 
-const acoesRapidas = [
-  { to: '/eleicoes',   icon: 'bi-plus-circle',      cor: 'primary', label: 'Nova Eleição'   },
-  { to: '/candidatos', icon: 'bi-person-plus',       cor: 'success', label: 'Novo Candidato' },
-  { to: '/urnas',      icon: 'bi-archive',           cor: 'warning', label: 'Gerenciar Urnas' },
-  { to: '/eleitores',  icon: 'bi-person-check',      cor: 'info',    label: 'Gerenciar Eleitores' },
-]
-
-function formatarData(data) {
-  if (!data) return '—'
-  return new Date(data).toLocaleDateString('pt-BR')
-}
-
-function badgeStatus(status) {
-  return { 1: 'bg-secondary-subtle text-secondary', 2: 'bg-success-subtle text-success', 3: 'bg-danger-subtle text-danger' }[status] ?? 'bg-secondary-subtle text-secondary'
-}
-
-function labelStatus(status) {
-  return { 1: 'Criada', 2: 'Em Andamento', 3: 'Finalizada' }[status] ?? 'Desconhecido'
-}
-
 onMounted(async () => {
   try {
     const [resEleicoes, resCandidatos, resEleitores, resUsuarios] = await Promise.all([
@@ -171,8 +72,7 @@ onMounted(async () => {
       api.get('/eleitores'),
       api.get('/usuarios'),
     ])
-    eleicoes.value = resEleicoes.data.data || []
-    totais.eleicoes   = eleicoes.value.length
+    totais.eleicoes   = (resEleicoes.data.data || []).length
     totais.candidatos = (resCandidatos.data.data || []).length
     totais.eleitores  = (resEleitores.data.data || []).length
     totais.usuarios   = (resUsuarios.data.data || []).length

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import api from '../services/api.js'
+import { fotoUrl } from '../utils/uploads.js'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -218,7 +219,7 @@ onMounted(async () => {
                 ]"
               >
                 <div class="candidato-item__foto">
-                  <img v-if="c.foto" :src="c.foto" :alt="c.descricao" />
+                  <img v-if="c.foto" :src="fotoUrl(c.foto)" :alt="c.descricao" />
                   <div v-else class="candidato-item__foto-empty">
                     <i class="bi bi-person-fill"></i>
                   </div>

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Modal } from 'bootstrap'
 import api from '../../services/api.js'
+import { fotoUrl } from '../../utils/uploads.js'
 
 const route = useRoute()
 const id = route.params.id
@@ -581,7 +582,7 @@ onMounted(async () => {
                   }"
                 >
                   <div class="candidato-item__foto">
-                    <img v-if="c.foto" :src="c.foto" :alt="c.descricao" />
+                    <img v-if="c.foto" :src="fotoUrl(c.foto)" :alt="c.descricao" />
                     <div v-else class="candidato-item__foto-empty"><i class="bi bi-person-fill"></i></div>
                     <span v-if="idx === 0 && totalVotos > 0 && eleicao?.status !== 4" class="candidato-item__trophy"><i class="bi bi-trophy-fill"></i></span>
                   </div>
@@ -969,7 +970,7 @@ onMounted(async () => {
                 >
                   <div class="urna-voto-card__seq">#{{ idx + 1 }}</div>
                   <div class="urna-voto-card__foto">
-                    <img v-if="voto.candidato?.foto" :src="voto.candidato.foto" :alt="voto.candidato.descricao" />
+                    <img v-if="voto.candidato?.foto" :src="fotoUrl(voto.candidato.foto)" :alt="voto.candidato.descricao" />
                     <div v-else class="urna-voto-card__foto-empty"><i class="bi bi-person-fill"></i></div>
                   </div>
                   <div class="urna-voto-card__numero">{{ voto.candidato?.numero }}</div>

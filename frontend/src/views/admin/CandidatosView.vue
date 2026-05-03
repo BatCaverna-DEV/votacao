@@ -59,7 +59,7 @@
             <tbody>
               <tr v-for="item in listaFiltrada" :key="item.id">
                 <td class="ps-4">
-                  <img v-if="item.foto" :src="item.foto" class="foto-thumb" alt="Foto" />
+                  <img v-if="item.foto" :src="fotoUrl(item.foto)" class="foto-thumb" alt="Foto" />
                   <div v-else class="foto-placeholder"><i class="bi bi-person-fill"></i></div>
                 </td>
                 <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ item.numero }}</span></td>
@@ -169,6 +169,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import api from '../../services/api.js'
+import { fotoUrl } from '../../utils/uploads.js'
 
 const lista = ref([])
 const eleicoes = ref([])

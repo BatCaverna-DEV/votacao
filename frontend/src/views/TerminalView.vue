@@ -55,7 +55,7 @@
             @click="escolha = c.id"
           >
             <div class="candidato-card__foto">
-              <img v-if="c.foto" :src="c.foto" :alt="c.descricao" />
+              <img v-if="c.foto" :src="fotoUrl(c.foto)" :alt="c.descricao" />
               <div v-else class="candidato-card__foto-empty"><i class="bi bi-person-fill"></i></div>
             </div>
             <div class="candidato-card__info">
@@ -89,7 +89,7 @@
 
         <div class="confirmar-card">
           <div class="confirmar-foto">
-            <img v-if="candidatoEscolhido?.foto" :src="candidatoEscolhido.foto" :alt="candidatoEscolhido.descricao" />
+            <img v-if="candidatoEscolhido?.foto" :src="fotoUrl(candidatoEscolhido.foto)" :alt="candidatoEscolhido.descricao" />
             <div v-else class="confirmar-foto-empty"><i class="bi bi-person-fill"></i></div>
           </div>
           <div class="confirmar-numero">{{ candidatoEscolhido?.numero }}</div>
@@ -130,6 +130,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../services/api.js'
+import { fotoUrl } from '../utils/uploads.js'
 
 const route = useRoute()
 const router = useRouter()

@@ -13,7 +13,4 @@ const app = createApp(App)
 app.use(pinia)
 app.use(router)
 
-// Garante que a navegação inicial foi resolvida antes de montar
-await router.isReady()
-
-app.mount('#app')
+router.isReady().then(() => app.mount('#app'))

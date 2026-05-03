@@ -52,7 +52,7 @@
               @click="selecionado[item.id] = c.id"
             >
               <div class="candidato-foto">
-                <img v-if="c.foto" :src="c.foto" :alt="c.descricao" />
+                <img v-if="c.foto" :src="fotoUrl(c.foto)" :alt="c.descricao" />
                 <div v-else class="candidato-foto__empty"><i class="bi bi-person-fill"></i></div>
               </div>
               <div class="candidato-numero">{{ c.numero }}</div>
@@ -89,7 +89,7 @@
 
             <div v-if="itemConfirmando" class="confirm-candidato mb-4">
               <div class="confirm-foto">
-                <img v-if="candidatoSelecionado?.foto" :src="candidatoSelecionado.foto" :alt="candidatoSelecionado.descricao" />
+                <img v-if="candidatoSelecionado?.foto" :src="fotoUrl(candidatoSelecionado.foto)" :alt="candidatoSelecionado.descricao" />
                 <div v-else class="confirm-foto__empty"><i class="bi bi-person-fill"></i></div>
               </div>
               <div class="confirm-numero">{{ candidatoSelecionado?.numero }}</div>
@@ -130,6 +130,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import api from '../services/api.js'
+import { fotoUrl } from '../utils/uploads.js'
 
 const loading = ref(true)
 const eleicoes = ref([])
