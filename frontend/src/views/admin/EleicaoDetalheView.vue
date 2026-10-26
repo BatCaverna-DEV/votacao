@@ -501,6 +501,14 @@ onMounted(async () => {
               </button>
             </div>
             <div class="card-body p-3">
+              <div class="alert alert-light border small py-2 mb-3 d-flex gap-2">
+                <i class="bi bi-info-circle text-primary"></i>
+                <span>
+                  Votos em <strong>branco</strong> e <strong>nulos</strong> são contabilizados automaticamente pela urna:
+                  branco pela tecla BRANCO e nulo quando o número digitado não corresponde a nenhum candidato.
+                  Não é preciso cadastrá-los.
+                </span>
+              </div>
               <div v-if="candidatos.length === 0" class="text-center py-4 text-muted">
                 <i class="bi bi-person-badge fs-2 d-block mb-2"></i>
                 Nenhum candidato cadastrado
@@ -675,6 +683,7 @@ onMounted(async () => {
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Número <span class="text-danger">*</span></label>
                 <input v-model.number="formCandidato.numero" type="number" min="1" class="form-control" required />
+                <div class="form-text">Brancos e nulos são automáticos — não cadastre candidatos para eles.</div>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Descrição / Nome</label>

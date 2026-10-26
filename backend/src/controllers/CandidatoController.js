@@ -1,7 +1,9 @@
 import { Candidato } from '../models/index.js';
 import { success, created, notFound, badRequest } from '../helpers/response.js';
 import { validarEleicaoEditavel } from '../helpers/eleicao.js';
+import { nomeReservado } from '../helpers/voto.js';
 import { v4 as uuidv4 } from 'uuid';
+import { Op } from 'sequelize';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,6 +14,23 @@ function deletarFoto(foto) {
   if (!foto) return;
   const arquivo = path.join(__dirname, '../../uploads/candidatos', path.basename(foto));
   fs.unlink(arquivo, () => {});
+}
+
+// Retorna uma mensagem de erro se os dados do candidato forem inválidos
+async function validarCandidato({ id, descricao, numero, eleicoes_id }) {
+  if (nomeReservado(descricao)) {
+    return 'Votos em branco e nulos já são contabilizados automaticamente; não cadastre candidatos para eles';
+  }
+
+  const valor = Number(numero);
+  if (!Number.isInteger(valor) || valor <= 0) return 'Informe um número inteiro maior que zero';
+
+  // Números repetidos impediriam a urna de saber em quem o eleitor votou
+  const where = { eleicoes_id, numero: valor };
+  if (id) where.id = { [Op.ne]: id };
+  if (await Candidato.findOne({ where })) return `Já existe um candidato com o número ${valor} nesta eleição`;
+
+  return null;
 }
 
 export const listar = async (req, res) => {
@@ -45,7 +64,8 @@ export const criar = async (req, res) => {
       return badRequest(res, 'eleicoes_id é obrigatório');
     }
 
-    const erro = await validarEleicaoEditavel(eleicoes_id);
+    const erro = await validarEleicaoEditavel(eleicoes_id)
+      ?? await validarCandidato({ descricao, numero, eleicoes_id });
     if (erro) {
       if (req.file) deletarFoto(req.file.filename);
       return badRequest(res, erro);
@@ -69,13 +89,23 @@ export const atualizar = async (req, res) => {
       return notFound(res, 'Candidato não encontrado');
     }
 
-    const { descricao, numero, eleicoes_id = candidato.eleicoes_id } = req.body;
+    const {
+      descricao = candidato.descricao,
+      numero = candidato.numero,
+      eleicoes_id = candidato.eleicoes_id,
+    } = req.body;
     for (const id of new Set([candidato.eleicoes_id, eleicoes_id])) {
       const erro = await validarEleicaoEditavel(id);
       if (erro) {
         if (req.file) deletarFoto(req.file.filename);
         return badRequest(res, erro);
       }
+    }
+
+    const erro = await validarCandidato({ id: candidato.id, descricao, numero, eleicoes_id });
+    if (erro) {
+      if (req.file) deletarFoto(req.file.filename);
+      return badRequest(res, erro);
     }
 
     const updates = { descricao, numero, eleicoes_id };

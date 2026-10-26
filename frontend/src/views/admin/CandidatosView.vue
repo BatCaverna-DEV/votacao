@@ -104,6 +104,7 @@
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Número <span class="text-danger">*</span></label>
                 <input v-model.number="form.numero" type="number" min="1" class="form-control" required />
+                <div class="form-text">Brancos e nulos são automáticos — não cadastre candidatos para eles.</div>
               </div>
 
               <div class="mb-3">

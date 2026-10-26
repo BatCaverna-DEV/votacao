@@ -66,13 +66,11 @@ const eleicao = {
   fim: new Date('2024-05-31'),
 };
 
-// --- Candidatos (3 reais + Nulo + Branco) ---
+// --- Candidatos (brancos e nulos são automáticos, não são candidatos) ---
 const candidatos = [
   { id: uuidv4(), numero: 10, descricao: 'Chapa Renovação',  eleicoes_id: eleicaoId },
   { id: uuidv4(), numero: 20, descricao: 'Chapa Progresso',  eleicoes_id: eleicaoId },
   { id: uuidv4(), numero: 30, descricao: 'Chapa Unidade',    eleicoes_id: eleicaoId },
-  { id: uuidv4(), numero: 95, descricao: 'Voto Nulo',        eleicoes_id: eleicaoId },
-  { id: uuidv4(), numero: 99, descricao: 'Voto em Branco',   eleicoes_id: eleicaoId },
 ];
 
 // --- Urnas ---
@@ -111,5 +109,5 @@ console.log('✔  Seed concluído!');
 console.log('   Admin          : admin (senha: 123456)');
 console.log('   Eleitores      : 14 usuários (senha: 123456)');
 console.log('   Eleição        : Eleição do Diretório Acadêmico 2024');
-console.log('   Candidatos     : Chapa Renovação (10), Chapa Progresso (20), Chapa Unidade (30), Voto Nulo (95), Voto em Branco (99)');
+console.log('   Candidatos     : Chapa Renovação (10), Chapa Progresso (20), Chapa Unidade (30)');
 console.log('   Urnas          : Urna 01 – Bloco A / Urna 02 – Bloco B / Urna 03 – Online');
