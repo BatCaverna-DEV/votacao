@@ -1,0 +1,35 @@
+:root {
+  --ifma-green:      #00A651;
+  --ifma-green-dark: #006B3C;
+
+  --urna-corpo:      #d9d3c3;
+  --urna-corpo-sombra: #b9b2a0;
+  --urna-tela:       #f4f4ef;
+  --urna-teclado:    #1f1f1f;
+  --urna-tecla:      #0e0e0e;
+  --urna-branco:     #f7f7f7;
+  --urna-corrige:    #e8762c;
+  --urna-confirma:   #1f9d55;
+}
+
+body {
+  background: radial-gradient(circle at top, #3b4a42 0%, #1c2420 70%);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.btn-primary {
+  background-color: var(--ifma-green);
+  border-color: var(--ifma-green);
+}
+.btn-primary:hover:not(:disabled),
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--ifma-green-dark) !important;
+  border-color: var(--ifma-green-dark) !important;
+}
+
+.form-control:focus {
+  border-color: var(--ifma-green);
+  box-shadow: 0 0 0 0.2rem rgba(0, 166, 81, .25);
+}

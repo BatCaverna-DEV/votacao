@@ -6,6 +6,7 @@ import eleicoesRoutes from './eleicoes.js';
 import candidatosRoutes from './candidatos.js';
 import eleitoresRoutes from './eleitores.js';
 import urnasRoutes from './urnas.js';
+import votacaoRoutes from './votacao.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/eleicoes', eleicoesRoutes);
 router.use('/candidatos', candidatosRoutes);
 router.use('/eleitores', eleitoresRoutes);
 router.use('/urnas', urnasRoutes);
+router.use('/votacao', votacaoRoutes);
 
 export default router;

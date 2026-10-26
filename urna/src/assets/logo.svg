@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#006B3C"/>
+      <stop offset="100%" stop-color="#00A651"/>
+    </linearGradient>
+    <linearGradient id="checkGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#d4f5e2" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ícone: cédula arredondada com check -->
+  <rect x="0" y="4" width="52" height="52" rx="14" fill="url(#bgGrad)"/>
+
+  <!-- Linhas da cédula -->
+  <rect x="10" y="18" width="20" height="3" rx="1.5" fill="white" fill-opacity="0.35"/>
+  <rect x="10" y="25" width="14" height="3" rx="1.5" fill="white" fill-opacity="0.35"/>
+
+  <!-- Check mark -->
+  <polyline points="10,38 18,46 42,22" stroke="url(#checkGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Texto: Vota -->
+  <text x="64" y="42" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="800" fill="#006B3C" letter-spacing="-0.5">Vota</text>
+
+  <!-- Texto: IF (destaque) -->
+  <text x="139" y="42" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="800" fill="#00A651" letter-spacing="-0.5">IF</text>
+
+  <!-- Linha decorativa sob o texto -->
+  <rect x="64" y="47" width="76" height="3" rx="1.5" fill="url(#bgGrad)" opacity="0.5"/>
+</svg>
