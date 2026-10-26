@@ -1,5 +1,6 @@
-import { Eleitor, Pessoa, Eleicao } from '../models/index.js';
+import { Eleitor, Pessoa } from '../models/index.js';
 import { success, created, notFound, badRequest } from '../helpers/response.js';
+import { validarEleicaoEditavel } from '../helpers/eleicao.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export const listar = async (req, res) => {
@@ -33,13 +34,11 @@ export const criar = async (req, res) => {
 
     if (!pessoas_id || !eleicoes_id) return badRequest(res, 'pessoas_id e eleicoes_id são obrigatórios');
 
-    const [pessoa, eleicao] = await Promise.all([
-      Pessoa.findByPk(pessoas_id),
-      Eleicao.findByPk(eleicoes_id),
-    ]);
-
+    const pessoa = await Pessoa.findByPk(pessoas_id);
     if (!pessoa) return notFound(res, 'Pessoa não encontrada');
-    if (!eleicao) return notFound(res, 'Eleição não encontrada');
+
+    const erro = await validarEleicaoEditavel(eleicoes_id);
+    if (erro) return badRequest(res, erro);
 
     const jaInscrito = await Eleitor.findOne({ where: { pessoas_id, eleicoes_id } });
     if (jaInscrito) return badRequest(res, 'Pessoa já inscrita nesta eleição');
@@ -56,7 +55,18 @@ export const atualizar = async (req, res) => {
     const eleitor = await Eleitor.findByPk(req.params.id);
     if (!eleitor) return notFound(res, 'Eleitor não encontrado');
 
-    await eleitor.update(req.body);
+    const erro = await validarEleicaoEditavel(eleitor.eleicoes_id);
+    if (erro) return badRequest(res, erro);
+
+    // O status do eleitor é controlado pelo sistema da urna
+    const { pessoas_id = eleitor.pessoas_id } = req.body;
+    const pessoa = await Pessoa.findByPk(pessoas_id);
+    if (!pessoa) return notFound(res, 'Pessoa não encontrada');
+
+    const jaInscrito = await Eleitor.findOne({ where: { pessoas_id, eleicoes_id: eleitor.eleicoes_id } });
+    if (jaInscrito && jaInscrito.id !== eleitor.id) return badRequest(res, 'Pessoa já inscrita nesta eleição');
+
+    await eleitor.update({ pessoas_id });
     return success(res, eleitor, 'Eleitor atualizado com sucesso');
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -68,25 +78,11 @@ export const remover = async (req, res) => {
     const eleitor = await Eleitor.findByPk(req.params.id);
     if (!eleitor) return notFound(res, 'Eleitor não encontrado');
 
+    const erro = await validarEleicaoEditavel(eleitor.eleicoes_id);
+    if (erro) return badRequest(res, erro);
+
     await eleitor.destroy();
     return success(res, null, 'Eleitor removido com sucesso');
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-export const liberar = async (req, res) => {
-  try {
-    const eleitor = await Eleitor.findByPk(req.params.id);
-    if (!eleitor) return notFound(res, 'Eleitor não encontrado');
-    if (eleitor.status === 2) return badRequest(res, 'Eleitor já votou e não pode ser alterado');
-    if (eleitor.status === 1) return badRequest(res, 'Eleitor já está liberado');
-
-    const eleicao = await Eleicao.findByPk(eleitor.eleicoes_id);
-    if (!eleicao || eleicao.status !== 2) return badRequest(res, 'A eleição precisa estar Em Andamento para liberar eleitores');
-
-    await eleitor.update({ status: 1 });
-    return success(res, eleitor, 'Eleitor liberado para votar');
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

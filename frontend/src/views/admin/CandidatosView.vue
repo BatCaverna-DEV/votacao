@@ -66,10 +66,10 @@
                 <td class="fw-semibold small">{{ item.descricao }}</td>
                 <td class="small text-muted">{{ item.eleicao?.descricao || '—' }}</td>
                 <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" @click="abrirModal(item)">
+                  <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" :disabled="item.eleicao?.status !== 1" @click="abrirModal(item)">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="btn btn-sm btn-outline-danger" title="Excluir" @click="confirmarExclusao(item)">
+                  <button class="btn btn-sm btn-outline-danger" title="Excluir" :disabled="item.eleicao?.status !== 1" @click="confirmarExclusao(item)">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -96,8 +96,9 @@
                 <label class="form-label small fw-semibold">Eleição <span class="text-danger">*</span></label>
                 <select v-model="form.eleicoes_id" class="form-select" required>
                   <option value="">Selecione uma eleição</option>
-                  <option v-for="e in eleicoes" :key="e.id" :value="e.id">{{ e.descricao }}</option>
+                  <option v-for="e in eleicoesNaoIniciadas" :key="e.id" :value="e.id">{{ e.descricao }}</option>
                 </select>
+                <div class="form-text">Apenas eleições ainda não iniciadas.</div>
               </div>
 
               <div class="mb-3">
@@ -194,6 +195,8 @@ const removerFotoFlag = ref(false)
 
 const itemParaExcluir = ref(null)
 const excluindo = ref(false)
+
+const eleicoesNaoIniciadas = computed(() => eleicoes.value.filter(e => e.status === 1))
 
 const listaFiltrada = computed(() =>
   lista.value.filter(c => {

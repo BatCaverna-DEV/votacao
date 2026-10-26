@@ -31,10 +31,9 @@
           <div class="col-auto">
             <select v-model="filtroStatus" class="form-select form-select-sm">
               <option value="">Todos os status</option>
-              <option value="1">Criada</option>
-              <option value="2">Em Andamento</option>
-              <option value="3">Em Apuração</option>
-              <option value="4">Finalizada</option>
+              <option value="1">Não iniciada</option>
+              <option value="2">Em andamento</option>
+              <option value="3">Encerrada</option>
             </select>
           </div>
         </div>
@@ -75,10 +74,10 @@
                   </span>
                 </td>
                 <td class="text-end pe-4" @click.stop>
-                  <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" @click="abrirModal(item)">
+                  <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" :disabled="item.status !== 1" @click="abrirModal(item)">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="btn btn-sm btn-outline-danger" title="Excluir" @click="confirmarExclusao(item)">
+                  <button class="btn btn-sm btn-outline-danger" title="Excluir" :disabled="item.status === 2" @click="confirmarExclusao(item)">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -115,16 +114,6 @@
                   <label class="form-label small fw-semibold">Data de Fim</label>
                   <input v-model="form.fim" type="date" class="form-control" />
                 </div>
-              </div>
-
-              <div v-if="modoEdicao" class="mb-1">
-                <label class="form-label small fw-semibold">Status</label>
-                <select v-model="form.status" class="form-select">
-                  <option :value="1">Criada</option>
-                  <option :value="2">Em Andamento</option>
-                  <option :value="3">Em Apuração</option>
-                  <option :value="4">Finalizada</option>
-                </select>
               </div>
             </div>
             <div class="modal-footer">
@@ -182,7 +171,7 @@ let bsModalExcluir = null
 const modoEdicao = ref(false)
 const salvando = ref(false)
 const erroModal = ref('')
-const form = ref({ id: null, descricao: '', inicio: '', fim: '', status: 0 })
+const form = ref({ id: null, descricao: '', inicio: '', fim: '' })
 
 const itemParaExcluir = ref(null)
 const excluindo = ref(false)
@@ -204,13 +193,13 @@ function badgeStatus(s) {
   return {
     1: 'bg-secondary-subtle text-secondary',
     2: 'bg-success-subtle text-success',
-    3: 'bg-warning-subtle text-warning',
+    3: 'bg-danger-subtle text-danger',
     4: 'bg-danger-subtle text-danger',
   }[s] ?? 'bg-secondary-subtle text-secondary'
 }
 
 function labelStatus(s) {
-  return { 1: 'Criada', 2: 'Em Andamento', 3: 'Em Apuração', 4: 'Finalizada' }[s] ?? '—'
+  return { 1: 'Não iniciada', 2: 'Em andamento', 3: 'Encerrada', 4: 'Encerrada' }[s] ?? '—'
 }
 
 function dataParaInput(valor) {
@@ -222,10 +211,10 @@ function abrirModal(item = null) {
   erroModal.value = ''
   if (item) {
     modoEdicao.value = true
-    form.value = { id: item.id, descricao: item.descricao, inicio: dataParaInput(item.inicio), fim: dataParaInput(item.fim), status: item.status ?? 0 }
+    form.value = { id: item.id, descricao: item.descricao, inicio: dataParaInput(item.inicio), fim: dataParaInput(item.fim) }
   } else {
     modoEdicao.value = false
-    form.value = { id: null, descricao: '', inicio: '', fim: '', status: 1 }
+    form.value = { id: null, descricao: '', inicio: '', fim: '' }
   }
   bsModal.show()
 }
@@ -242,7 +231,6 @@ async function salvar() {
       descricao: form.value.descricao,
       inicio: form.value.inicio || null,
       fim: form.value.fim || null,
-      status: form.value.status,
     }
     if (modoEdicao.value) {
       const { data } = await api.put(`/eleicoes/${form.value.id}`, payload)

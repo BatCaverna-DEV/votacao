@@ -11,7 +11,7 @@ const id = route.params.id
 
 const loading = ref(true)
 const salvando = ref(false)
-const excluindo = ref(false)
+const confirmando = ref(false)
 const erroModal = ref('')
 const alerta = ref({ mensagem: '', tipo: 'success' })
 const buscaEleitor = ref('')
@@ -21,15 +21,12 @@ const candidatos = ref([])
 const urnas = ref([])
 const eleitores = ref([])
 const pessoas = ref([])
-const totalEleitores = ref(0)
-const totalVotos = ref(0)
 
-const participacao = computed(() =>
-    totalEleitores.value > 0 ? Math.round((totalVotos.value / totalEleitores.value) * 100) : 0
-)
+// Os dados só podem ser alterados enquanto a eleição não foi iniciada
+const editavel = computed(() => eleicao.value?.status === 1)
 
 const candidatosOrdenados = computed(() =>
-    [...candidatos.value].sort((a, b) => (b.votos?.length ?? 0) - (a.votos?.length ?? 0))
+    [...candidatos.value].sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0))
 )
 
 const eleitoresFiltrados = computed(() =>
@@ -40,26 +37,14 @@ const eleitoresFiltrados = computed(() =>
     )
 )
 
-const todasUrnaApuradas = computed(() =>
-    urnas.value.length > 0 && urnas.value.every(u => u.status === 3)
-)
-
 // Refs dos modais
 const modalEleicaoEl = ref(null)
 const modalCandidatoEl = ref(null)
 const modalEditarCandidatoEl = ref(null)
 const modalUrnaEl = ref(null)
 const modalEleitorEl = ref(null)
-const modalExcluirEl = ref(null)
-const modalAbrirUrnaEl = ref(null)
-let bsModalEleicao, bsModalCandidato, bsModalEditarCandidato, bsModalUrna, bsModalEleitor, bsModalExcluir, bsModalAbrirUrna
-
-// Estado do modal de apuração
-const urnaAberta = ref(null)
-const votosUrnaAberta = ref([])
-const totalVotosUrnaAberta = ref(0)
-const carregandoVotos = ref(false)
-const apurando = ref(false)
+const modalConfirmarEl = ref(null)
+let bsModalEleicao, bsModalCandidato, bsModalEditarCandidato, bsModalUrna, bsModalEleitor, bsModalConfirmar
 
 // Forms
 const formEleicao = ref({ descricao: '', inicio: '', fim: '' })
@@ -76,7 +61,7 @@ const fotoEditarPreview = ref('')
 const inputFotoEditarEl = ref(null)
 const formUrna = ref({ descricao: '' })
 const formEleitor = ref({ pessoas_id: '' })
-const excluirConfig = ref({ titulo: '', mensagem: '', acao: null })
+const confirmarConfig = ref({ titulo: '', mensagem: '', botao: '', classe: 'btn-danger', acao: null })
 
 function formatarData(d) {
   if (!d) return '—'
@@ -92,18 +77,44 @@ function badgeStatus(s) {
   return {
     1: 'bg-secondary-subtle text-secondary',
     2: 'bg-success-subtle text-success',
-    3: 'bg-warning-subtle text-warning',
+    3: 'bg-danger-subtle text-danger',
     4: 'bg-danger-subtle text-danger',
   }[s] ?? 'bg-secondary-subtle text-secondary'
 }
 
 function labelStatus(s) {
-  return { 1: 'Criada', 2: 'Em Andamento', 3: 'Em Apuração', 4: 'Finalizada' }[s] ?? '—'
+  return { 1: 'Não iniciada', 2: 'Em andamento', 3: 'Encerrada', 4: 'Encerrada' }[s] ?? '—'
 }
 
 function mostrarAlerta(mensagem, tipo = 'success') {
   alerta.value = { mensagem, tipo }
   setTimeout(() => { alerta.value.mensagem = '' }, 4000)
+}
+
+async function copiar(texto) {
+  try {
+    await navigator.clipboard.writeText(texto)
+    mostrarAlerta('Identificador copiado.')
+  } catch {
+    mostrarAlerta('Não foi possível copiar.', 'danger')
+  }
+}
+
+// --- Confirmação genérica ---
+function abrirConfirmacao(config) {
+  confirmarConfig.value = { botao: 'Excluir', classe: 'btn-danger', ...config }
+  bsModalConfirmar.show()
+}
+function fecharModalConfirmar() { bsModalConfirmar.hide() }
+
+async function executarConfirmacao() {
+  confirmando.value = true
+  try {
+    await confirmarConfig.value.acao()
+  } finally {
+    confirmando.value = false
+    fecharModalConfirmar()
+  }
 }
 
 // --- Eleição ---
@@ -118,7 +129,11 @@ async function salvarEleicao() {
   erroModal.value = ''
   salvando.value = true
   try {
-    const { data } = await api.put(`/eleicoes/${id}`, formEleicao.value)
+    const { data } = await api.put(`/eleicoes/${id}`, {
+      descricao: formEleicao.value.descricao,
+      inicio: formEleicao.value.inicio || null,
+      fim: formEleicao.value.fim || null,
+    })
     eleicao.value = { ...eleicao.value, ...data.data }
     mostrarAlerta('Eleição atualizada com sucesso.')
     fecharModalEleicao()
@@ -129,13 +144,37 @@ async function salvarEleicao() {
   }
 }
 
-async function alterarStatus(novoStatus) {
+function confirmarIniciar() {
+  abrirConfirmacao({
+    titulo: 'Iniciar eleição',
+    mensagem: 'Depois de iniciada, a eleição fica disponível para as urnas e seus candidatos, urnas e eleitores não poderão mais ser alterados.',
+    botao: 'Iniciar',
+    classe: 'btn-success',
+    acao: () => alterarSituacao('iniciar'),
+  })
+}
+
+function confirmarEncerrar() {
+  abrirConfirmacao({
+    titulo: 'Encerrar eleição',
+    mensagem: 'As urnas deixarão de aceitar votos e os eleitores que não votaram serão marcados como faltosos. Esta ação não pode ser desfeita.',
+    botao: 'Encerrar',
+    classe: 'btn-danger',
+    acao: () => alterarSituacao('encerrar'),
+  })
+}
+
+async function alterarSituacao(acao) {
   try {
-    const { data } = await api.put(`/eleicoes/${id}`, { status: novoStatus })
+    const { data } = await api.put(`/eleicoes/${id}/${acao}`)
     eleicao.value = { ...eleicao.value, ...data.data }
-    mostrarAlerta(`Status alterado para "${labelStatus(novoStatus)}".`)
+    mostrarAlerta(data.message)
+    if (acao === 'encerrar') {
+      const res = await api.get(`/eleitores?eleicao=${id}`)
+      eleitores.value = res.data.data || []
+    }
   } catch (err) {
-    mostrarAlerta(err.response?.data?.message || 'Erro ao alterar status.', 'danger')
+    mostrarAlerta(err.response?.data?.message || 'Erro ao alterar a situação da eleição.', 'danger')
   }
 }
 
@@ -168,7 +207,7 @@ async function salvarCandidato() {
     if (fotoCandidatoArquivo.value) fd.append('foto', fotoCandidatoArquivo.value)
 
     const { data } = await api.post('/candidatos', fd)
-    candidatos.value.push({ ...data.data, votos: [] })
+    candidatos.value.push(data.data)
     mostrarAlerta('Candidato adicionado.')
     fecharModalCandidato()
   } catch (err) {
@@ -179,26 +218,20 @@ async function salvarCandidato() {
 }
 
 function confirmarExclusaoCandidato(c) {
-  excluirConfig.value = {
+  abrirConfirmacao({
     titulo: 'Excluir candidato',
     mensagem: `Tem certeza que deseja excluir "${c.descricao}"?`,
     acao: () => excluirCandidato(c.id),
-  }
-  bsModalExcluir.show()
+  })
 }
 
 async function excluirCandidato(cid) {
-  excluindo.value = true
   try {
     await api.delete(`/candidatos/${cid}`)
     candidatos.value = candidatos.value.filter(c => c.id !== cid)
     mostrarAlerta('Candidato excluído.')
-    fecharModalExcluir()
   } catch (err) {
     mostrarAlerta(err.response?.data?.message || 'Erro ao excluir.', 'danger')
-    fecharModalExcluir()
-  } finally {
-    excluindo.value = false
   }
 }
 
@@ -207,7 +240,7 @@ function abrirModalEditarCandidato(c) {
   candidatoEditando.value = c
   formEditarCandidato.value = { numero: c.numero, descricao: c.descricao }
   fotoEditarArquivo.value = null
-  fotoEditarPreview.value = c.foto || ''
+  fotoEditarPreview.value = c.foto ? fotoUrl(c.foto) : ''
   if (inputFotoEditarEl.value) inputFotoEditarEl.value.value = ''
   bsModalEditarCandidato.show()
 }
@@ -264,87 +297,21 @@ async function salvarUrna() {
   }
 }
 
-function badgeUrnaStatus(s) {
-  return { 1: 'bg-secondary-subtle text-secondary', 2: 'bg-success-subtle text-success', 3: 'bg-info-subtle text-info' }[s] ?? 'bg-secondary-subtle text-secondary'
-}
-
-function labelUrnaStatus(s) {
-  return { 1: 'Fechada', 2: 'Aberta', 3: 'Apurada' }[s] ?? '—'
-}
-
-async function alterarStatusUrna(urna, novoStatus) {
-  try {
-    await api.put(`/urnas/${urna.id}`, { status: novoStatus })
-    urna.status = novoStatus
-  } catch (err) {
-    mostrarAlerta(err.response?.data?.message || 'Erro ao atualizar urna.', 'danger')
-  }
-}
-
 function confirmarExclusaoUrna(u) {
-  excluirConfig.value = {
+  abrirConfirmacao({
     titulo: 'Excluir urna',
     mensagem: `Tem certeza que deseja excluir "${u.descricao}"?`,
     acao: () => excluirUrna(u.id),
-  }
-  bsModalExcluir.show()
+  })
 }
 
 async function excluirUrna(uid) {
-  excluindo.value = true
   try {
     await api.delete(`/urnas/${uid}`)
     urnas.value = urnas.value.filter(u => u.id !== uid)
     mostrarAlerta('Urna excluída.')
-    fecharModalExcluir()
   } catch (err) {
     mostrarAlerta(err.response?.data?.message || 'Erro ao excluir.', 'danger')
-    fecharModalExcluir()
-  } finally {
-    excluindo.value = false
-  }
-}
-
-function abrirTerminal(urnaId) {
-  window.open(`/terminal/${urnaId}`, '_blank')
-}
-
-// --- Abrir / Apurar Urna ---
-async function abrirUrna(u) {
-  urnaAberta.value = u
-  votosUrnaAberta.value = []
-  totalVotosUrnaAberta.value = 0
-  carregandoVotos.value = true
-  bsModalAbrirUrna.show()
-  try {
-    const { data } = await api.get(`/urnas/${u.id}/votos`)
-    votosUrnaAberta.value = data.data.votos || []
-    totalVotosUrnaAberta.value = data.data.totalVotos || 0
-  } finally {
-    carregandoVotos.value = false
-  }
-}
-
-function fecharModalAbrirUrna() { bsModalAbrirUrna.hide() }
-
-async function apurarUrna() {
-  apurando.value = true
-  try {
-    await api.put(`/urnas/${urnaAberta.value.id}/apurar`)
-    // Atualiza status local da urna
-    const idx = urnas.value.findIndex(u => u.id === urnaAberta.value.id)
-    if (idx !== -1) urnas.value[idx].status = 3
-    urnaAberta.value = { ...urnaAberta.value, status: 3 }
-    mostrarAlerta('Urna apurada com sucesso.')
-    // Recarrega o resultado para refletir os votos apurados
-    const { data } = await api.get(`/eleicoes/${id}/resultado`)
-    candidatos.value = data.data.candidatos || []
-    totalVotos.value = data.data.totalVotos || 0
-    fecharModalAbrirUrna()
-  } catch (err) {
-    mostrarAlerta(err.response?.data?.message || 'Erro ao apurar.', 'danger')
-  } finally {
-    apurando.value = false
   }
 }
 
@@ -363,7 +330,6 @@ async function salvarEleitor() {
     const { data } = await api.post('/eleitores', { pessoas_id: formEleitor.value.pessoas_id, eleicoes_id: id })
     const detalhe = await api.get(`/eleitores/${data.data.id}`)
     eleitores.value.push(detalhe.data.data)
-    totalEleitores.value++
     mostrarAlerta('Eleitor inscrito.')
     fecharModalEleitor()
   } catch (err) {
@@ -373,43 +339,24 @@ async function salvarEleitor() {
   }
 }
 
-async function liberarEleitor(e) {
-  try {
-    await api.put(`/eleitores/${e.id}/liberar`)
-    const idx = eleitores.value.findIndex(el => el.id === e.id)
-    if (idx !== -1) eleitores.value[idx].status = 1
-    mostrarAlerta(`${e.pessoa?.nome} liberado para votar.`)
-  } catch (err) {
-    mostrarAlerta(err.response?.data?.message || 'Erro ao liberar eleitor.', 'danger')
-  }
-}
-
 function confirmarExclusaoEleitor(e) {
-  excluirConfig.value = {
+  abrirConfirmacao({
     titulo: 'Remover eleitor',
     mensagem: `Remover "${e.pessoa?.nome}" desta eleição?`,
+    botao: 'Remover',
     acao: () => excluirEleitor(e.id),
-  }
-  bsModalExcluir.show()
+  })
 }
 
 async function excluirEleitor(eid) {
-  excluindo.value = true
   try {
     await api.delete(`/eleitores/${eid}`)
     eleitores.value = eleitores.value.filter(e => e.id !== eid)
-    totalEleitores.value--
     mostrarAlerta('Eleitor removido.')
-    fecharModalExcluir()
   } catch (err) {
     mostrarAlerta(err.response?.data?.message || 'Erro ao remover.', 'danger')
-    fecharModalExcluir()
-  } finally {
-    excluindo.value = false
   }
 }
-
-function fecharModalExcluir() { bsModalExcluir.hide() }
 
 onMounted(async () => {
   bsModalEleicao = new Modal(modalEleicaoEl.value)
@@ -417,23 +364,18 @@ onMounted(async () => {
   bsModalEditarCandidato = new Modal(modalEditarCandidatoEl.value)
   bsModalUrna = new Modal(modalUrnaEl.value)
   bsModalEleitor = new Modal(modalEleitorEl.value)
-  bsModalExcluir = new Modal(modalExcluirEl.value)
-  bsModalAbrirUrna = new Modal(modalAbrirUrnaEl.value)
+  bsModalConfirmar = new Modal(modalConfirmarEl.value)
 
   try {
-    const [resDetalhe, resResultado, resEleitores, resPessoas] = await Promise.all([
+    const [resDetalhe, resEleitores, resPessoas] = await Promise.all([
       api.get(`/eleicoes/${id}`),
-      api.get(`/eleicoes/${id}/resultado`),
       api.get(`/eleitores?eleicao=${id}`),
       api.get('/pessoas'),
     ])
 
     eleicao.value = resDetalhe.data.data
+    candidatos.value = resDetalhe.data.data.candidatos || []
     urnas.value = resDetalhe.data.data.urnas || []
-
-    candidatos.value = resResultado.data.data.candidatos || []
-    totalEleitores.value = resResultado.data.data.totalEleitores || 0
-    totalVotos.value = resResultado.data.data.totalVotos || 0
 
     eleitores.value = resEleitores.data.data || []
     pessoas.value = resPessoas.data.data || []
@@ -464,37 +406,34 @@ onMounted(async () => {
           </span>
           <span v-else>Sem datas definidas</span>
         </p>
+        <p v-if="eleicao" class="text-muted small mb-0 mt-1">
+          ID: <code>{{ eleicao.id }}</code>
+          <button class="btn btn-link btn-sm p-0 ms-1 align-baseline" title="Copiar ID" @click="copiar(eleicao.id)">
+            <i class="bi bi-copy"></i>
+          </button>
+        </p>
       </div>
       <div class="d-flex gap-2">
-        <button
-          v-if="eleicao?.status === 1"
-          class="btn btn-sm btn-success"
-          @click="alterarStatus(2)"
-        >
-          <i class="bi bi-play-fill me-1"></i>Iniciar
-        </button>
-        <button
-          v-else-if="eleicao?.status === 2"
-          class="btn btn-sm btn-warning"
-          @click="alterarStatus(3)"
-        >
-          <i class="bi bi-clock-fill me-1"></i>Encerrar Votação
-        </button>
-        <button
-          v-else-if="eleicao?.status === 3"
-          class="btn btn-sm btn-danger"
-          :disabled="!todasUrnaApuradas"
-          :title="!todasUrnaApuradas ? 'Todas as urnas precisam ser apuradas' : 'Finalizar eleição'"
-          @click="alterarStatus(4)"
-        >
-          <i class="bi bi-flag-fill me-1"></i>Finalizar
-        </button>
         <button
           v-if="eleicao?.status === 1"
           class="btn btn-sm btn-primary"
           @click="abrirModalEleicao"
         >
           <i class="bi bi-pencil me-1"></i>Editar
+        </button>
+        <button
+          v-if="eleicao?.status === 1"
+          class="btn btn-sm btn-success"
+          @click="confirmarIniciar"
+        >
+          <i class="bi bi-play-fill me-1"></i>Iniciar eleição
+        </button>
+        <button
+          v-else-if="eleicao?.status === 2"
+          class="btn btn-sm btn-danger"
+          @click="confirmarEncerrar"
+        >
+          <i class="bi bi-stop-fill me-1"></i>Encerrar eleição
         </button>
       </div>
     </div>
@@ -504,10 +443,16 @@ onMounted(async () => {
       <button type="button" class="btn-close" @click="alerta.mensagem = ''"></button>
     </div>
 
+    <div v-if="eleicao && !editavel" class="alert alert-info small d-flex align-items-center gap-2">
+      <i class="bi bi-lock-fill"></i>
+      <span v-if="eleicao.status === 2">A eleição está em andamento. Candidatos, urnas e eleitores não podem mais ser alterados.</span>
+      <span v-else>A eleição foi encerrada. Os dados estão disponíveis apenas para consulta.</span>
+    </div>
+
     <!-- Skeleton de carregamento inicial -->
     <div v-if="loading">
       <div class="row g-3 mb-4">
-        <div v-for="n in 4" :key="n" class="col-6 col-xl-3">
+        <div v-for="n in 3" :key="n" class="col-12 col-md-4">
           <div class="card border-0 shadow-sm placeholder-glow">
             <div class="card-body"><span class="placeholder col-8 rounded" style="height:48px"></span></div>
           </div>
@@ -518,7 +463,7 @@ onMounted(async () => {
     <template v-else>
       <!-- Cards de totais -->
       <div class="row g-3 mb-4">
-        <div class="col-6 col-xl-3">
+        <div class="col-12 col-md-4">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
               <p class="text-muted small mb-1">Candidatos</p>
@@ -526,43 +471,32 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-12 col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <p class="text-muted small mb-1">Urnas</p>
+              <h3 class="fw-bold mb-0">{{ urnas.length }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
               <p class="text-muted small mb-1">Eleitores</p>
-              <h3 class="fw-bold mb-0">{{ totalEleitores }}</h3>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-xl-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <p class="text-muted small mb-1">Votos computados</p>
-              <h3 class="fw-bold mb-0">{{ totalVotos }}</h3>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-xl-3">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <p class="text-muted small mb-1">Participação</p>
-              <h3 class="fw-bold mb-0">{{ participacao }}%</h3>
-              <div class="progress mt-2" style="height:4px">
-                <div class="progress-bar bg-primary" :style="`width:${participacao}%`"></div>
-              </div>
+              <h3 class="fw-bold mb-0">{{ eleitores.length }}</h3>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Resultado + Urnas -->
+      <!-- Candidatos + Urnas -->
       <div class="row g-3 mb-3">
-        <!-- Resultado dos candidatos -->
+        <!-- Candidatos -->
         <div class="col-12 col-xl-7">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between py-3">
-              <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Resultado parcial</h6>
-              <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @click="abrirModalCandidato()">
+              <h6 class="fw-bold mb-0"><i class="bi bi-person-badge-fill text-primary me-2"></i>Candidatos</h6>
+              <button v-if="editavel" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @click="abrirModalCandidato()">
                 <i class="bi bi-plus-lg"></i> Candidato
               </button>
             </div>
@@ -572,50 +506,23 @@ onMounted(async () => {
                 Nenhum candidato cadastrado
               </div>
               <div v-else class="candidatos-lista">
-                <div
-                  v-for="(c, idx) in candidatosOrdenados"
-                  :key="c.id"
-                  class="candidato-item"
-                  :class="{
-                    'candidato-item--lider': idx === 0 && totalVotos > 0 && eleicao?.status !== 4,
-                    'candidato-item--eleito': idx === 0 && eleicao?.status === 4 && totalVotos > 0,
-                  }"
-                >
+                <div v-for="c in candidatosOrdenados" :key="c.id" class="candidato-item">
                   <div class="candidato-item__foto">
                     <img v-if="c.foto" :src="fotoUrl(c.foto)" :alt="c.descricao" />
                     <div v-else class="candidato-item__foto-empty"><i class="bi bi-person-fill"></i></div>
-                    <span v-if="idx === 0 && totalVotos > 0 && eleicao?.status !== 4" class="candidato-item__trophy"><i class="bi bi-trophy-fill"></i></span>
                   </div>
-                  <div class="candidato-item__info">
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                      <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="badge bg-secondary-subtle text-secondary fw-bold px-2">Nº {{ c.numero }}</span>
-                        <span class="fw-semibold">{{ c.descricao }}</span>
-                        <span v-if="idx === 0 && eleicao?.status === 4 && totalVotos > 0" class="badge bg-success text-white d-flex align-items-center gap-1">
-                          <i class="bi bi-patch-check-fill"></i> Eleito
-                        </span>
-                      </div>
-                      <div class="d-flex align-items-center gap-3">
-                        <span class="fw-bold text-primary">{{ c.votos.length }} <span class="text-muted fw-normal small">voto{{ c.votos.length !== 1 ? 's' : '' }}</span></span>
-                        <div class="d-flex gap-1">
-                          <button class="btn btn-sm btn-light border px-2 py-1" @click="abrirModalEditarCandidato(c)" title="Editar">
-                            <i class="bi bi-pencil small text-primary"></i>
-                          </button>
-                          <button class="btn btn-sm btn-light border px-2 py-1" @click="confirmarExclusaoCandidato(c)" title="Excluir">
-                            <i class="bi bi-trash small text-danger"></i>
-                          </button>
-                        </div>
-                      </div>
+                  <div class="candidato-item__info d-flex align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <span class="badge bg-secondary-subtle text-secondary fw-bold px-2">Nº {{ c.numero }}</span>
+                      <span class="fw-semibold">{{ c.descricao }}</span>
                     </div>
-                    <div class="progress" style="height:6px; border-radius:3px">
-                      <div
-                        class="progress-bar"
-                        :class="idx === 0 && eleicao?.status === 4 && totalVotos > 0 ? 'bg-success' : idx === 0 && totalVotos > 0 ? 'bg-warning' : 'bg-primary'"
-                        :style="`width:${totalVotos > 0 ? Math.round((c.votos.length / totalVotos) * 100) : 0}%`"
-                      ></div>
-                    </div>
-                    <div class="text-end mt-1">
-                      <span class="small text-muted">{{ totalVotos > 0 ? Math.round((c.votos.length / totalVotos) * 100) : 0 }}%</span>
+                    <div v-if="editavel" class="d-flex gap-1">
+                      <button class="btn btn-sm btn-light border px-2 py-1" @click="abrirModalEditarCandidato(c)" title="Editar">
+                        <i class="bi bi-pencil small text-primary"></i>
+                      </button>
+                      <button class="btn btn-sm btn-light border px-2 py-1" @click="confirmarExclusaoCandidato(c)" title="Excluir">
+                        <i class="bi bi-trash small text-danger"></i>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -629,7 +536,7 @@ onMounted(async () => {
           <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between py-3">
               <h6 class="fw-bold mb-0"><i class="bi bi-archive-fill text-warning me-2"></i>Urnas</h6>
-              <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @click="abrirModalUrna()">
+              <button v-if="editavel" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @click="abrirModalUrna()">
                 <i class="bi bi-plus-lg"></i> Urna
               </button>
             </div>
@@ -639,34 +546,19 @@ onMounted(async () => {
                 Nenhuma urna cadastrada
               </div>
               <ul v-else class="list-group list-group-flush">
-                <li v-for="u in urnas" :key="u.id" class="list-group-item d-flex align-items-center justify-content-between py-3">
-                  <div>
+                <li v-for="u in urnas" :key="u.id" class="list-group-item d-flex align-items-center justify-content-between gap-2 py-3">
+                  <div class="text-truncate">
                     <p class="fw-semibold small mb-0">{{ u.descricao }}</p>
-                    <span :class="['badge rounded-pill mt-1', badgeUrnaStatus(u.status)]">
-                      {{ labelUrnaStatus(u.status) }}
+                    <span class="text-muted small">
+                      ID: <code>{{ u.id }}</code>
+                      <button class="btn btn-link btn-sm p-0 ms-1 align-baseline" title="Copiar ID" @click="copiar(u.id)">
+                        <i class="bi bi-copy"></i>
+                      </button>
                     </span>
                   </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <button
-                      class="btn btn-sm btn-outline-primary"
-                      :disabled="eleicao?.status !== 2"
-                      :title="eleicao?.status !== 2 ? 'Disponível apenas com a eleição Em Andamento' : 'Abrir terminal de votação'"
-                      @click="abrirTerminal(u.id)"
-                    >
-                      <i class="bi bi-display me-1"></i>Terminal
-                    </button>
-                    <button
-                      class="btn btn-sm btn-outline-success"
-                      :disabled="eleicao?.status !== 3"
-                      :title="eleicao?.status !== 3 ? 'Disponível apenas com a eleição Finalizada' : 'Abrir urna'"
-                      @click="abrirUrna(u)"
-                    >
-                      <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </button>
-                    <button class="btn btn-sm btn-link text-danger p-0" @click="confirmarExclusaoUrna(u)">
-                      <i class="bi bi-trash small"></i>
-                    </button>
-                  </div>
+                  <button v-if="editavel" class="btn btn-sm btn-link text-danger p-0" title="Excluir" @click="confirmarExclusaoUrna(u)">
+                    <i class="bi bi-trash small"></i>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -683,7 +575,7 @@ onMounted(async () => {
               <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
               <input v-model="buscaEleitor" type="text" class="form-control border-start-0" placeholder="Buscar..." />
             </div>
-            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @click="abrirModalEleitor()">
+            <button v-if="editavel" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @click="abrirModalEleitor()">
               <i class="bi bi-plus-lg"></i> Eleitor
             </button>
           </div>
@@ -700,8 +592,8 @@ onMounted(async () => {
                   <th class="small fw-semibold ps-4">Nome</th>
                   <th class="small fw-semibold">Matrícula</th>
                   <th class="small fw-semibold">Curso</th>
-                  <th class="small fw-semibold">Situação</th>
-                  <th class="small fw-semibold text-end pe-4">Ações</th>
+                  <th v-if="!editavel" class="small fw-semibold pe-4">Situação</th>
+                  <th v-else class="small fw-semibold text-end pe-4">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -709,26 +601,17 @@ onMounted(async () => {
                   <td class="ps-4 fw-semibold small">{{ e.pessoa?.nome || '—' }}</td>
                   <td class="small text-muted">{{ e.pessoa?.matricula || '—' }}</td>
                   <td class="small text-muted">{{ e.pessoa?.curso || '—' }}</td>
-                  <td>
+                  <td v-if="!editavel" class="pe-4">
                     <span :class="['badge rounded-pill',
                       e.status === 2 ? 'bg-success-subtle text-success' :
-                      e.status === 1 ? 'bg-primary-subtle text-primary' :
                       e.status === 3 ? 'bg-danger-subtle text-danger' :
-                      'bg-warning-subtle text-warning'
+                      'bg-secondary-subtle text-secondary'
                     ]">
-                      {{ e.status === 2 ? 'Votou' : e.status === 1 ? 'Liberado' : e.status === 3 ? 'Faltou' : 'Pendente' }}
+                      {{ e.status === 2 ? 'Votou' : e.status === 3 ? 'Faltou' : 'Aguardando' }}
                     </span>
                   </td>
-                  <td class="text-end pe-4">
-                    <button
-                      class="btn btn-sm btn-outline-success me-1"
-                      :disabled="e.status !== 0 || eleicao?.status !== 2"
-                      :title="eleicao?.status !== 2 ? 'A eleição precisa estar Em Andamento' : 'Liberar para votar'"
-                      @click="liberarEleitor(e)"
-                    >
-                      <i class="bi bi-unlock"></i> Liberar
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" :disabled="e.status === 2" @click="confirmarExclusaoEleitor(e)">
+                  <td v-else class="text-end pe-4">
+                    <button class="btn btn-sm btn-outline-danger" title="Remover" @click="confirmarExclusaoEleitor(e)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -933,89 +816,22 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Modal Abrir Urna / Apuração -->
-    <div class="modal fade" tabindex="-1" ref="modalAbrirUrnaEl">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <div>
-              <h5 class="modal-title fw-bold">
-                <i class="bi bi-archive-fill text-warning me-2"></i>{{ urnaAberta?.descricao }}
-              </h5>
-              <span v-if="urnaAberta" :class="['badge rounded-pill', badgeUrnaStatus(urnaAberta.status)]">
-                {{ labelUrnaStatus(urnaAberta.status) }}
-              </span>
-            </div>
-            <button type="button" class="btn-close ms-auto" @click="fecharModalAbrirUrna"></button>
-          </div>
-          <div class="modal-body">
-            <div v-if="carregandoVotos" class="py-4">
-              <div v-for="n in 3" :key="n" class="placeholder-glow mb-3">
-                <span class="placeholder col-12 rounded" style="height:32px"></span>
-              </div>
-            </div>
-            <div v-else-if="votosUrnaAberta.length === 0" class="text-center py-5 text-muted">
-              <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-              Nenhum voto depositado nesta urna
-            </div>
-            <div v-else>
-              <p class="text-muted small mb-3">
-                Total de votos depositados: <strong>{{ totalVotosUrnaAberta }}</strong>
-              </p>
-              <div class="urna-cards-grid">
-                <div
-                  v-for="(voto, idx) in votosUrnaAberta"
-                  :key="voto.id"
-                  class="urna-voto-card"
-                >
-                  <div class="urna-voto-card__seq">#{{ idx + 1 }}</div>
-                  <div class="urna-voto-card__foto">
-                    <img v-if="voto.candidato?.foto" :src="fotoUrl(voto.candidato.foto)" :alt="voto.candidato.descricao" />
-                    <div v-else class="urna-voto-card__foto-empty"><i class="bi bi-person-fill"></i></div>
-                  </div>
-                  <div class="urna-voto-card__numero">{{ voto.candidato?.numero }}</div>
-                  <div class="urna-voto-card__nome">{{ voto.candidato?.descricao }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="urnaAberta?.status === 3" class="alert alert-info py-2 small mb-0 mt-3">
-              <i class="bi bi-check-circle-fill me-1"></i> Esta urna já foi apurada e seus votos estão contabilizados no resultado.
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="fecharModalAbrirUrna">Fechar</button>
-            <button
-              type="button"
-              class="btn btn-success d-flex align-items-center gap-2"
-              :disabled="apurando || urnaAberta?.status === 3 || carregandoVotos"
-              @click="apurarUrna"
-            >
-              <span v-if="apurando" class="spinner-border spinner-border-sm"></span>
-              <i v-else class="bi bi-check2-all"></i>
-              {{ urnaAberta?.status === 3 ? 'Já apurada' : 'Apurar' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Confirmar Exclusão -->
-    <div class="modal fade" tabindex="-1" ref="modalExcluirEl">
+    <!-- Modal Confirmação -->
+    <div class="modal fade" tabindex="-1" ref="modalConfirmarEl">
       <div class="modal-dialog modal-sm">
         <div class="modal-content">
           <div class="modal-header border-0 pb-0">
-            <h6 class="modal-title fw-bold">{{ excluirConfig.titulo }}</h6>
-            <button type="button" class="btn-close" @click="fecharModalExcluir"></button>
+            <h6 class="modal-title fw-bold">{{ confirmarConfig.titulo }}</h6>
+            <button type="button" class="btn-close" @click="fecharModalConfirmar"></button>
           </div>
           <div class="modal-body pt-2">
-            <p class="small mb-0">{{ excluirConfig.mensagem }}</p>
+            <p class="small mb-0">{{ confirmarConfig.mensagem }}</p>
           </div>
           <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-secondary btn-sm" @click="fecharModalExcluir">Cancelar</button>
-            <button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-2" @click="excluirConfig.acao" :disabled="excluindo">
-              <span v-if="excluindo" class="spinner-border spinner-border-sm"></span>
-              Excluir
+            <button type="button" class="btn btn-secondary btn-sm" @click="fecharModalConfirmar">Cancelar</button>
+            <button type="button" :class="['btn btn-sm d-flex align-items-center gap-2', confirmarConfig.classe]" @click="executarConfirmacao" :disabled="confirmando">
+              <span v-if="confirmando" class="spinner-border spinner-border-sm"></span>
+              {{ confirmarConfig.botao }}
             </button>
           </div>
         </div>
@@ -1029,74 +845,6 @@ onMounted(async () => {
 <style scoped>
 .card-header {
   border-bottom: 1px solid #f0f0f0 !important;
-}
-
-/* Cards de votos da urna */
-.urna-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
-}
-
-.urna-voto-card {
-  position: relative;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 10px;
-  padding: 14px 10px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  text-align: center;
-}
-
-.urna-voto-card__seq {
-  position: absolute;
-  top: 5px;
-  left: 8px;
-  font-size: 0.65rem;
-  color: #adb5bd;
-  font-weight: 600;
-}
-
-.urna-voto-card__foto {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #dee2e6;
-}
-
-.urna-voto-card__foto img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.urna-voto-card__foto-empty {
-  width: 100%;
-  height: 100%;
-  background: #e9ecef;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  color: #adb5bd;
-}
-
-.urna-voto-card__numero {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #0d6efd;
-  line-height: 1;
-}
-
-.urna-voto-card__nome {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #495057;
-  line-height: 1.3;
 }
 
 /* Lista de candidatos */
@@ -1114,35 +862,12 @@ onMounted(async () => {
   border-radius: 12px;
   background: #f8f9fa;
   border: 1px solid #e9ecef;
-  transition: border-color 0.2s;
-}
-
-.candidato-item--lider {
-  background: #fffdf0;
-  border-color: #ffc107;
-}
-
-.candidato-item--eleito {
-  background: #f0fff4;
-  border-color: #198754;
-}
-
-.candidato-item--eleito .candidato-item__foto img,
-.candidato-item--eleito .candidato-item__foto-empty {
-  border-color: #198754 !important;
-}
-
-.candidato-item--eleito .candidato-item__trophy {
-  background: #198754 !important;
 }
 
 .candidato-item__foto {
-  position: relative;
   flex-shrink: 0;
   width: 72px;
   height: 72px;
-  border-radius: 50%;
-  overflow: visible;
 }
 
 .candidato-item__foto img,
@@ -1155,11 +880,6 @@ onMounted(async () => {
   display: block;
 }
 
-.candidato-item--lider .candidato-item__foto img,
-.candidato-item--lider .candidato-item__foto-empty {
-  border-color: #ffc107;
-}
-
 .candidato-item__foto-empty {
   background: #e9ecef;
   display: flex;
@@ -1167,22 +887,6 @@ onMounted(async () => {
   justify-content: center;
   font-size: 1.8rem;
   color: #adb5bd;
-}
-
-.candidato-item__trophy {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  background: #ffc107;
-  color: #fff;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  border: 2px solid #fff;
 }
 
 .candidato-item__info {

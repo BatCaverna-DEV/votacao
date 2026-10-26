@@ -33,8 +33,7 @@
           <div class="col-auto">
             <select v-model="filtroSituacao" class="form-select form-select-sm">
               <option value="">Todas as situações</option>
-              <option value="0">Pendente</option>
-              <option value="1">Liberado</option>
+              <option value="aguardando">Aguardando</option>
               <option value="2">Votou</option>
               <option value="3">Faltou</option>
             </select>
@@ -73,15 +72,14 @@
                 <td>
                   <span :class="['badge rounded-pill',
                     item.status === 2 ? 'bg-success-subtle text-success' :
-                    item.status === 1 ? 'bg-primary-subtle text-primary' :
                     item.status === 3 ? 'bg-danger-subtle text-danger' :
-                    'bg-warning-subtle text-warning'
+                    'bg-secondary-subtle text-secondary'
                   ]">
-                    {{ item.status === 2 ? 'Votou' : item.status === 1 ? 'Liberado' : item.status === 3 ? 'Faltou' : 'Pendente' }}
+                    {{ item.status === 2 ? 'Votou' : item.status === 3 ? 'Faltou' : 'Aguardando' }}
                   </span>
                 </td>
                 <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-outline-danger" title="Remover" @click="confirmarExclusao(item)" :disabled="item.status === 2">
+                  <button class="btn btn-sm btn-outline-danger" title="Remover" @click="confirmarExclusao(item)" :disabled="item.eleicao?.status !== 1">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -108,8 +106,9 @@
                 <label class="form-label small fw-semibold">Eleição <span class="text-danger">*</span></label>
                 <select v-model="form.eleicoes_id" class="form-select" required>
                   <option value="">Selecione uma eleição</option>
-                  <option v-for="e in eleicoes" :key="e.id" :value="e.id">{{ e.descricao }}</option>
+                  <option v-for="e in eleicoesNaoIniciadas" :key="e.id" :value="e.id">{{ e.descricao }}</option>
                 </select>
+                <div class="form-text">Apenas eleições ainda não iniciadas.</div>
               </div>
 
               <div class="mb-1">
@@ -186,10 +185,13 @@ const listaFiltrada = computed(() =>
   lista.value.filter(e => {
     const matchBusca = !busca.value || e.pessoa?.nome?.toLowerCase().includes(busca.value.toLowerCase())
     const matchEleicao = !filtroEleicao.value || e.eleicoes_id === filtroEleicao.value
-    const matchSituacao = filtroSituacao.value === '' || String(e.status) === filtroSituacao.value
+    const situacao = e.status === 2 || e.status === 3 ? String(e.status) : 'aguardando'
+    const matchSituacao = filtroSituacao.value === '' || situacao === filtroSituacao.value
     return matchBusca && matchEleicao && matchSituacao
   })
 )
+
+const eleicoesNaoIniciadas = computed(() => eleicoes.value.filter(e => e.status === 1))
 
 function abrirModal() {
   erroModal.value = ''

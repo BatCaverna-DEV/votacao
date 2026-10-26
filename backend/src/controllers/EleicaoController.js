@@ -1,5 +1,6 @@
 import { Eleicao, Candidato, Urna, Eleitor } from '../models/index.js';
 import { success, created, notFound, badRequest } from '../helpers/response.js';
+import { STATUS } from '../helpers/eleicao.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Op } from 'sequelize';
 
@@ -29,10 +30,10 @@ export const buscarPorId = async (req, res) => {
 
 export const criar = async (req, res) => {
   try {
-    const { descricao, status, inicio, fim } = req.body;
+    const { descricao, inicio, fim } = req.body;
     if (!descricao) return badRequest(res, 'Descrição é obrigatória');
 
-    const eleicao = await Eleicao.create({ id: uuidv4(), descricao, status: status ?? 1, inicio, fim });
+    const eleicao = await Eleicao.create({ id: uuidv4(), descricao, status: STATUS.NAO_INICIADA, inicio, fim });
     return created(res, eleicao, 'Eleição criada com sucesso');
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -43,25 +44,12 @@ export const atualizar = async (req, res) => {
   try {
     const eleicao = await Eleicao.findByPk(req.params.id);
     if (!eleicao) return notFound(res, 'Eleição não encontrada');
+    if (eleicao.status !== STATUS.NAO_INICIADA)
+      return badRequest(res, 'A eleição só pode ser editada enquanto não foi iniciada');
 
-    if (req.body.status === 4) {
-      const urnasPendentes = await Urna.count({
-        where: { eleicoes_id: eleicao.id, status: { [Op.ne]: 3 } },
-      });
-      if (urnasPendentes > 0)
-        return badRequest(res, 'Todas as urnas precisam ser apuradas antes de finalizar a eleição');
-    }
-
-    await eleicao.update(req.body);
-
-    // Ao encerrar a votação (Em Apuração), eleitores que não votaram tornam-se "Faltou"
-    if (req.body.status === 3) {
-      await Eleitor.update(
-        { status: 3 },
-        { where: { eleicoes_id: eleicao.id, status: { [Op.in]: [0, 1] } } }
-      );
-    }
-
+    // O status só muda pelas rotas de iniciar/encerrar
+    const { descricao, inicio, fim } = req.body;
+    await eleicao.update({ descricao, inicio, fim });
     return success(res, eleicao, 'Eleição atualizada com sucesso');
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -72,6 +60,8 @@ export const remover = async (req, res) => {
   try {
     const eleicao = await Eleicao.findByPk(req.params.id);
     if (!eleicao) return notFound(res, 'Eleição não encontrada');
+    if (eleicao.status === STATUS.EM_ANDAMENTO)
+      return badRequest(res, 'Não é possível excluir uma eleição em andamento');
 
     await eleicao.destroy();
     return success(res, null, 'Eleição removida com sucesso');
@@ -80,20 +70,50 @@ export const remover = async (req, res) => {
   }
 };
 
-export const resultado = async (req, res) => {
+export const iniciar = async (req, res) => {
   try {
     const eleicao = await Eleicao.findByPk(req.params.id);
     if (!eleicao) return notFound(res, 'Eleição não encontrada');
+    if (eleicao.status !== STATUS.NAO_INICIADA)
+      return badRequest(res, 'Apenas eleições não iniciadas podem ser iniciadas');
 
-    const candidatos = await Candidato.findAll({
-      where: { eleicoes_id: req.params.id },
-      include: [{ association: 'votos', where: { status: 2 }, required: false }],
-    });
+    const where = { eleicoes_id: eleicao.id };
+    const [totalCandidatos, totalUrnas, totalEleitores] = await Promise.all([
+      Candidato.count({ where }),
+      Urna.count({ where }),
+      Eleitor.count({ where }),
+    ]);
 
-    const totalEleitores = await Eleitor.count({ where: { eleicoes_id: req.params.id } });
-    const totalVotos = candidatos.reduce((acc, c) => acc + c.votos.length, 0);
+    const pendencias = [];
+    if (totalCandidatos === 0) pendencias.push('um candidato');
+    if (totalUrnas === 0) pendencias.push('uma urna');
+    if (totalEleitores === 0) pendencias.push('um eleitor');
+    if (pendencias.length > 0)
+      return badRequest(res, `Cadastre pelo menos ${pendencias.join(', ')} antes de iniciar a eleição`);
 
-    return success(res, { eleicao, candidatos, totalEleitores, totalVotos });
+    await eleicao.update({ status: STATUS.EM_ANDAMENTO });
+    return success(res, eleicao, 'Eleição iniciada');
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const encerrar = async (req, res) => {
+  try {
+    const eleicao = await Eleicao.findByPk(req.params.id);
+    if (!eleicao) return notFound(res, 'Eleição não encontrada');
+    if (eleicao.status !== STATUS.EM_ANDAMENTO)
+      return badRequest(res, 'Apenas eleições em andamento podem ser encerradas');
+
+    await eleicao.update({ status: STATUS.ENCERRADA });
+
+    // Eleitores que não votaram tornam-se "Faltou"
+    await Eleitor.update(
+      { status: 3 },
+      { where: { eleicoes_id: eleicao.id, status: { [Op.in]: [0, 1] } } }
+    );
+
+    return success(res, eleicao, 'Eleição encerrada');
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

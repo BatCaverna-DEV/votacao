@@ -51,7 +51,7 @@
               <tr>
                 <th class="small fw-semibold ps-4">Descrição</th>
                 <th class="small fw-semibold">Eleição</th>
-                <th class="small fw-semibold">Status</th>
+                <th class="small fw-semibold">ID</th>
                 <th class="small fw-semibold text-end pe-4">Ações</th>
               </tr>
             </thead>
@@ -59,16 +59,12 @@
               <tr v-for="item in listaFiltrada" :key="item.id">
                 <td class="ps-4 fw-semibold small">{{ item.descricao }}</td>
                 <td class="small text-muted">{{ item.eleicao?.descricao || '—' }}</td>
-                <td>
-                  <span :class="['badge rounded-pill', badgeUrnaStatus(item.status)]">
-                    {{ labelUrnaStatus(item.status) }}
-                  </span>
-                </td>
+                <td class="small text-muted"><code>{{ item.id }}</code></td>
                 <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" @click="abrirModal(item)">
+                  <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" :disabled="!editavel(item)" @click="abrirModal(item)">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="btn btn-sm btn-outline-danger" title="Excluir" @click="confirmarExclusao(item)">
+                  <button class="btn btn-sm btn-outline-danger" title="Excluir" :disabled="!editavel(item)" @click="confirmarExclusao(item)">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -95,22 +91,14 @@
                 <label class="form-label small fw-semibold">Eleição <span class="text-danger">*</span></label>
                 <select v-model="form.eleicoes_id" class="form-select" required>
                   <option value="">Selecione uma eleição</option>
-                  <option v-for="e in eleicoes" :key="e.id" :value="e.id">{{ e.descricao }}</option>
+                  <option v-for="e in eleicoesNaoIniciadas" :key="e.id" :value="e.id">{{ e.descricao }}</option>
                 </select>
+                <div class="form-text">Apenas eleições ainda não iniciadas.</div>
               </div>
 
-              <div class="mb-3">
+              <div class="mb-1">
                 <label class="form-label small fw-semibold">Descrição <span class="text-danger">*</span></label>
                 <input v-model="form.descricao" type="text" class="form-control" maxlength="100" required />
-              </div>
-
-              <div v-if="modoEdicao" class="mb-1">
-                <label class="form-label small fw-semibold">Status</label>
-                <select v-model="form.status" class="form-select">
-                  <option :value="1">Fechada</option>
-                  <option :value="2">Aberta</option>
-                  <option :value="3">Apurada</option>
-                </select>
               </div>
             </div>
             <div class="modal-footer">
@@ -169,7 +157,7 @@ let bsModalExcluir = null
 const modoEdicao = ref(false)
 const salvando = ref(false)
 const erroModal = ref('')
-const form = ref({ id: null, descricao: '', eleicoes_id: '', status: 0 })
+const form = ref({ id: null, descricao: '', eleicoes_id: '' })
 
 const itemParaExcluir = ref(null)
 const excluindo = ref(false)
@@ -182,22 +170,21 @@ const listaFiltrada = computed(() =>
   })
 )
 
-function badgeUrnaStatus(s) {
-  return { 1: 'bg-secondary-subtle text-secondary', 2: 'bg-success-subtle text-success', 3: 'bg-info-subtle text-info' }[s] ?? 'bg-secondary-subtle text-secondary'
-}
+const eleicoesNaoIniciadas = computed(() => eleicoes.value.filter(e => e.status === 1))
 
-function labelUrnaStatus(s) {
-  return { 1: 'Fechada', 2: 'Aberta', 3: 'Apurada' }[s] ?? '—'
+// Urnas só podem ser alteradas enquanto a eleição não foi iniciada
+function editavel(item) {
+  return item.eleicao?.status === 1
 }
 
 function abrirModal(item = null) {
   erroModal.value = ''
   if (item) {
     modoEdicao.value = true
-    form.value = { id: item.id, descricao: item.descricao, eleicoes_id: item.eleicoes_id, status: item.status ?? 0 }
+    form.value = { id: item.id, descricao: item.descricao, eleicoes_id: item.eleicoes_id }
   } else {
     modoEdicao.value = false
-    form.value = { id: null, descricao: '', eleicoes_id: '', status: 0 }
+    form.value = { id: null, descricao: '', eleicoes_id: '' }
   }
   bsModal.show()
 }
@@ -208,11 +195,12 @@ async function salvar() {
   erroModal.value = ''
   salvando.value = true
   try {
-    const payload = { descricao: form.value.descricao, eleicoes_id: form.value.eleicoes_id, status: form.value.status }
+    const payload = { descricao: form.value.descricao, eleicoes_id: form.value.eleicoes_id }
     if (modoEdicao.value) {
-      const { data } = await api.put(`/urnas/${form.value.id}`, payload)
+      await api.put(`/urnas/${form.value.id}`, payload)
+      const detalhe = await api.get(`/urnas/${form.value.id}`)
       const idx = lista.value.findIndex(u => u.id === form.value.id)
-      if (idx !== -1) lista.value[idx] = { ...lista.value[idx], ...data.data }
+      if (idx !== -1) lista.value[idx] = detalhe.data.data
       mostrarAlerta('Urna atualizada com sucesso.', 'success')
     } else {
       const { data } = await api.post('/urnas', payload)

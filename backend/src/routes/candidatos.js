@@ -5,16 +5,12 @@ import { uploadFoto } from '../middlewares/upload.js';
 
 const router = Router();
 
-router.use(autenticar);
+router.use(autenticar, autorizar(1));
 
-// Admin e Eleitor podem consultar candidatos
-router.get('/', autorizar(1, 2), listar);
-router.get('/:id', autorizar(1, 2), buscarPorId);
-
-
-// Apenas Admin gerencia candidatos
-router.post('/', autorizar(1), uploadFoto, criar);
-router.put('/:id', autorizar(1), uploadFoto, atualizar);
-router.delete('/:id', autorizar(1), remover);
+router.get('/', listar);
+router.get('/:id', buscarPorId);
+router.post('/', uploadFoto, criar);
+router.put('/:id', uploadFoto, atualizar);
+router.delete('/:id', remover);
 
 export default router;

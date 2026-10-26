@@ -2,13 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 
 const routes = [
-  // Página pública — acessível por qualquer pessoa
-  {
-    path: '/',
-    name: 'Home',
-    component: () => import('../views/HomeView.vue'),
-  },
-
   {
     path: '/login',
     name: 'Login',
@@ -16,12 +9,13 @@ const routes = [
     meta: { guest: true },
   },
 
-  // Área administrativa — mesmas rotas de antes
+  // Área administrativa
   {
     path: '/',
     component: () => import('../layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, adminOnly: true },
     children: [
+      { path: '', redirect: '/dashboard' },
       {
         path: 'dashboard',
         name: 'Dashboard',
@@ -65,26 +59,6 @@ const routes = [
     ],
   },
 
-  {
-    path: '/votar',
-    component: () => import('../layouts/VotacaoLayout.vue'),
-    meta: { requiresAuth: true, eleitorOnly: true },
-    children: [
-      {
-        path: '',
-        name: 'Votacao',
-        component: () => import('../views/VotacaoView.vue'),
-      },
-    ],
-  },
-
-  {
-    path: '/terminal/:urnaId',
-    name: 'Terminal',
-    component: () => import('../views/TerminalView.vue'),
-    meta: { requiresAuth: true, adminOnly: true },
-  },
-
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
@@ -98,12 +72,13 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login'
 
-  if (to.meta.guest && auth.isAuthenticated) {
-    return auth.isAdmin ? '/dashboard' : '/votar'
-  }
+  if (to.meta.guest && auth.isAuthenticated && auth.isAdmin) return '/dashboard'
 
-  if (to.meta.adminOnly && auth.isAuthenticated && !auth.isAdmin) return '/votar'
-  if (to.meta.eleitorOnly && auth.isAuthenticated && auth.isAdmin) return '/dashboard'
+  // Sessões antigas de eleitores não têm mais acesso ao sistema
+  if (to.meta.adminOnly && auth.isAuthenticated && !auth.isAdmin) {
+    auth.logout()
+    return '/login'
+  }
 })
 
 export default router

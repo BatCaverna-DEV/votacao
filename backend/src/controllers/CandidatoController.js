@@ -1,5 +1,6 @@
-import { Candidato, Eleicao } from '../models/index.js';
+import { Candidato } from '../models/index.js';
 import { success, created, notFound, badRequest } from '../helpers/response.js';
+import { validarEleicaoEditavel } from '../helpers/eleicao.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
@@ -39,10 +40,16 @@ export const criar = async (req, res) => {
   try {
     const { descricao, numero, eleicoes_id } = req.body;
 
-    if (!eleicoes_id) return badRequest(res, 'eleicoes_id é obrigatório');
+    if (!eleicoes_id) {
+      if (req.file) deletarFoto(req.file.filename);
+      return badRequest(res, 'eleicoes_id é obrigatório');
+    }
 
-    const eleicao = await Eleicao.findByPk(eleicoes_id);
-    if (!eleicao) return notFound(res, 'Eleição não encontrada');
+    const erro = await validarEleicaoEditavel(eleicoes_id);
+    if (erro) {
+      if (req.file) deletarFoto(req.file.filename);
+      return badRequest(res, erro);
+    }
 
     const foto = req.file ? `/uploads/candidatos/${req.file.filename}` : null;
 
@@ -57,13 +64,28 @@ export const criar = async (req, res) => {
 export const atualizar = async (req, res) => {
   try {
     const candidato = await Candidato.findByPk(req.params.id);
-    if (!candidato) return notFound(res, 'Candidato não encontrado');
+    if (!candidato) {
+      if (req.file) deletarFoto(req.file.filename);
+      return notFound(res, 'Candidato não encontrado');
+    }
 
-    const updates = { ...req.body };
+    const { descricao, numero, eleicoes_id = candidato.eleicoes_id } = req.body;
+    for (const id of new Set([candidato.eleicoes_id, eleicoes_id])) {
+      const erro = await validarEleicaoEditavel(id);
+      if (erro) {
+        if (req.file) deletarFoto(req.file.filename);
+        return badRequest(res, erro);
+      }
+    }
+
+    const updates = { descricao, numero, eleicoes_id };
 
     if (req.file) {
       deletarFoto(candidato.foto);
       updates.foto = `/uploads/candidatos/${req.file.filename}`;
+    } else if (req.body.removerFoto === '1') {
+      deletarFoto(candidato.foto);
+      updates.foto = null;
     }
 
     await candidato.update(updates);
@@ -78,6 +100,9 @@ export const remover = async (req, res) => {
   try {
     const candidato = await Candidato.findByPk(req.params.id);
     if (!candidato) return notFound(res, 'Candidato não encontrado');
+
+    const erro = await validarEleicaoEditavel(candidato.eleicoes_id);
+    if (erro) return badRequest(res, erro);
 
     deletarFoto(candidato.foto);
     await candidato.destroy();

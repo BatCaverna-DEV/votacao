@@ -1,19 +1,17 @@
 import { Router } from 'express';
-import { listar, buscarPorId, criar, atualizar, remover, resultado } from '../controllers/EleicaoController.js';
+import { listar, buscarPorId, criar, atualizar, remover, iniciar, encerrar } from '../controllers/EleicaoController.js';
 import { autenticar, autorizar } from '../middlewares/auth.js';
 
 const router = Router();
 
-router.use(autenticar);
+router.use(autenticar, autorizar(1));
 
-// Admin e Eleitor podem listar e ver detalhes
-router.get('/', autorizar(1, 2), listar);
-router.get('/:id', autorizar(1, 2), buscarPorId);
-router.get('/:id/resultado', autorizar(1, 2), resultado);
-
-// Apenas Admin gerencia eleições
-router.post('/', autorizar(1), criar);
-router.put('/:id', autorizar(1), atualizar);
-router.delete('/:id', autorizar(1), remover);
+router.get('/', listar);
+router.get('/:id', buscarPorId);
+router.post('/', criar);
+router.put('/:id/iniciar', iniciar);
+router.put('/:id/encerrar', encerrar);
+router.put('/:id', atualizar);
+router.delete('/:id', remover);
 
 export default router;
