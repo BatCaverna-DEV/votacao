@@ -12,3 +12,6 @@ export const validarEleicaoEditavel = async (eleicoes_id) => {
   }
   return null;
 };
+
+// Status do eleitor na eleição
+export const STATUS_ELEITOR = { PENDENTE: 0, LIBERADO: 1, VOTOU: 2, FALTOU: 3 };

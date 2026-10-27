@@ -26,6 +26,9 @@ Eleitor.belongsTo(Pessoa, { foreignKey: 'pessoas_id', as: 'pessoa' });
 Eleicao.hasMany(Urna, { foreignKey: 'eleicoes_id', as: 'urnas' });
 Urna.belongsTo(Eleicao, { foreignKey: 'eleicoes_id', as: 'eleicao' });
 
+// Urna N:1 Eleitor (eleitor liberado no momento)
+Urna.belongsTo(Eleitor, { foreignKey: 'eleitores_id', as: 'eleitorLiberado', constraints: false });
+
 // Candidato 1:N Voto
 Candidato.hasMany(Voto, { foreignKey: 'candidatos_id', as: 'votos' });
 Voto.belongsTo(Candidato, { foreignKey: 'candidatos_id', as: 'candidato' });

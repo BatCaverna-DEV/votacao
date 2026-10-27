@@ -564,6 +564,14 @@ onMounted(async () => {
                       </button>
                     </span>
                   </div>
+                  <RouterLink
+                    v-if="eleicao.status === 2"
+                    :to="`/urnas/${u.id}/painel`"
+                    class="btn btn-sm btn-outline-success text-nowrap"
+                    title="Painel do mesário"
+                  >
+                    <i class="bi bi-person-check-fill me-1"></i>Mesário
+                  </RouterLink>
                   <button v-if="editavel" class="btn btn-sm btn-link text-danger p-0" title="Excluir" @click="confirmarExclusaoUrna(u)">
                     <i class="bi bi-trash small"></i>
                   </button>

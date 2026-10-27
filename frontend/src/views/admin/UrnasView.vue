@@ -61,6 +61,14 @@
                 <td class="small text-muted">{{ item.eleicao?.descricao || '—' }}</td>
                 <td class="small text-muted"><code>{{ item.id }}</code></td>
                 <td class="text-end pe-4">
+                  <RouterLink
+                    v-if="item.eleicao?.status === 2"
+                    :to="`/urnas/${item.id}/painel`"
+                    class="btn btn-sm btn-outline-success me-1"
+                    title="Painel do mesário"
+                  >
+                    <i class="bi bi-person-check-fill"></i>
+                  </RouterLink>
                   <button class="btn btn-sm btn-outline-secondary me-1" title="Editar" :disabled="!editavel(item)" @click="abrirModal(item)">
                     <i class="bi bi-pencil"></i>
                   </button>

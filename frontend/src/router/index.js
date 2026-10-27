@@ -42,6 +42,11 @@ const routes = [
         component: () => import('../views/admin/UrnasView.vue'),
       },
       {
+        path: 'urnas/:id/painel',
+        name: 'PainelUrna',
+        component: () => import('../views/admin/PainelUrnaView.vue'),
+      },
+      {
         path: 'eleitores',
         name: 'Eleitores',
         component: () => import('../views/admin/EleitoresView.vue'),

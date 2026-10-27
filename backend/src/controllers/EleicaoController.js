@@ -113,6 +113,9 @@ export const encerrar = async (req, res) => {
       { where: { eleicoes_id: eleicao.id, status: { [Op.in]: [0, 1] } } }
     );
 
+    // Libera as urnas que ainda tinham eleitor aguardando
+    await Urna.update({ eleitores_id: null }, { where: { eleicoes_id: eleicao.id } });
+
     return success(res, eleicao, 'Eleição encerrada');
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

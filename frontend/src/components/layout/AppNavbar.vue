@@ -54,7 +54,8 @@ const router = useRouter()
 const showDropdown = ref(false)
 const dropdownRef = ref(null)
 
-const paginaAtual = computed(() => route.name || 'Dashboard')
+const TITULOS = { EleicaoDetalhe: 'Eleição', PainelUrna: 'Painel do mesário', Eleicoes: 'Eleições', Usuarios: 'Usuários' }
+const paginaAtual = computed(() => TITULOS[route.name] || route.name || 'Dashboard')
 
 const iniciais = computed(() => {
   const u = auth.usuario?.username || ''

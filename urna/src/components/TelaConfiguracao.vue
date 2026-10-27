@@ -2,11 +2,15 @@
 import { ref } from 'vue'
 import api, { mensagemErro } from '../services/api.js'
 
+const props = defineProps({
+  idInicial: { type: String, default: '' },
+  erroInicial: { type: String, default: '' },
+})
 const emit = defineEmits(['conectado'])
 
-const urnaId = ref('')
+const urnaId = ref(props.idInicial)
 const conectando = ref(false)
-const erro = ref('')
+const erro = ref(props.erroInicial)
 
 async function conectar() {
   erro.value = ''

@@ -25,3 +25,7 @@ export const unauthorized = (res, message = 'Não autorizado') => {
 export const forbidden = (res, message = 'Acesso negado') => {
   return error(res, message, 403);
 };
+
+export const conflict = (res, message = 'Conflito') => {
+  return error(res, message, 409);
+};

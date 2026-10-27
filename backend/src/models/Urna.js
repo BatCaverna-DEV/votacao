@@ -21,6 +21,21 @@ const Urna = sequelize.define('urnas', {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
+  eleitores_id: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'Eleitor liberado pelo mesário que ainda não concluiu o voto',
+  },
+  sessao: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'Sessão do dispositivo que está com a urna aberta',
+  },
+  ultimo_contato: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Último sinal de vida do dispositivo da sessão',
+  },
 });
 
 Urna.beforeCreate((urna) => {
